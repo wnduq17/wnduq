@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="자산관리">
+<meta name="theme-color" content="#F4F5F7">
+<title>자산관리</title>
+<style>
+  :root {
+    box-sizing: border-box;
+    --bg: #F4F5F7;
+    --surface: #FFFFFF;
+    --surface-alt: #F0F2F5;
+    --border: #E2E5EA;
+    --text: #1A1D24;
+    --text-dim: #5C6470;
+    --text-faint: #8B93A1;
+    --mint: #2F8FFF;
+    --mint-dim: rgba(47,143,255,0.12);
+    --amber: #C6820A;
+    --coral: #DD4B43;
+    --violet: #7566DD;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 18px 60px;
+  }
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  header.top h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .month-picker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .month-picker button {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .month-picker button:hover { color: var(--text); border-color: var(--text-faint); }
+  .month-label-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .month-jump-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+  .month-label {
+    font-size: 14px;
+    color: var(--text-dim);
+    min-width: 74px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    display: inline-block;
+  }
+  .settings-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .toolbar-btn {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .toolbar-btn.primary {
+    background: var(--mint-dim);
+    color: var(--mint);
+  }
+  .toolbar-btn.danger {
+    background: var(--surface-alt);
+    color: var(--coral);
+    border-color: rgba(221,75,67,0.3);
+  }
+  .card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .card-header-row h2 { margin: 0; }
+  .mini-reset-btn {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    font-size: 11px;
+    padding: 5px 11px;
+    border-radius: 100px;
+    cursor: pointer;
+  }
+  .mini-reset-btn:hover { color: var(--text); border-color: var(--text-faint); }
+  .card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .mini-save-btn {
+    background: var(--mint-dim);
+    border: 1px solid transparent;
+    color: var(--mint);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 100px;
+    cursor: pointer;
+  }
+  .default-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .default-hint {
+    font-size: 11px;
+    color: var(--text-faint);
+    flex: 1;
+  }
+  .mini-default-btn {
+    flex-shrink: 0;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--violet, #7566DD);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 100px;
+    cursor: pointer;
+  }
+  .mini-default-btn:hover { border-color: #7566DD; }
+
+  .holdings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .holding-row {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+  }
+  .holding-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .holding-top input[type=text] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 0;
+  }
+  .holding-top button.del {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 16px;
+    cursor: pointer;
+    width: 24px; height: 24px;
+    flex-shrink: 0;
+  }
+  .holding-top button.del:hover { color: var(--coral); }
+  .holding-top button.sell-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--amber, #C6820A);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 100px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .holding-top button.sell-btn:hover { border-color: #C6820A; }
+  .sell-modal-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .sell-modal-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .sell-modal-fields input {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .sell-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sh-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+  }
+  .sh-summary-row:hover { border-color: var(--text-faint); }
+  .sh-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .sh-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .sh-qty {
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+  .sh-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .sh-date {
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+  .holding-fields {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .holding-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+  .holding-fields input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 6px 8px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    width: 100%;
+    min-width: 0;
+  }
+  .holding-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    color: var(--text-dim);
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .holding-result .eval { font-weight: 700; color: var(--text); font-size: 13px; }
+  .holding-result .pnl.positive { color: var(--mint); }
+  .holding-result .pnl.negative { color: var(--coral); }
+  .cat-total-row .v.pnl-positive { color: var(--mint); }
+  .cat-total-row .v.pnl-negative { color: var(--coral); }
+  .chart-tooltip {
+    position: absolute;
+    transform: translate(-50%, -115%);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 4px 14px rgba(26,29,36,0.18);
+    display: none;
+  }
+  .chart-legend-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-bottom: 12px;
+  }
+  .chart-legend-inline .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .chart-legend-inline .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .chart-info {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+    min-height: 18px;
+  }
+  .chart-info.has-value {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .hero {
+    background: linear-gradient(150deg, var(--surface) 0%, var(--surface-alt) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 26px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero .glow {
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, var(--mint-dim) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 0 0 6px;
+  }
+  .hero-amount {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+  }
+  .hero-amount.negative { color: var(--coral); }
+  .hero-amount.positive { color: var(--text); }
+  .hero-sub {
+    display: flex;
+    gap: 22px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .hero-sub .item .k { font-size: 12px; color: var(--text-faint); margin-bottom: 3px; }
+  .hero-sub .item .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rate-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--mint-dim);
+    color: var(--mint);
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 560px) {
+    .grid2 { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(26,29,36,0.05);
+  }
+  .card h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+  }
+
+  .salary-input-row {
+    display: flex;
+    align-items: center;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+  }
+  .salary-input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    min-width: 0;
+  }
+  .salary-input-row span {
+    color: var(--text-faint);
+    font-size: 14px;
+    margin-left: 6px;
+  }
+
+  .starting-asset-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .starting-asset-row input {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 13px;
+    width: 130px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .cat-row {
+    display: grid;
+    grid-template-columns: 1fr 110px 26px;
+    gap: 8px;
+    align-items: center;
+  }
+  .cat-row input[type=text] {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 14px;
+    min-width: 0;
+  }
+  .cat-row input[type=number] {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 14px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    width: 100%;
+    min-width: 0;
+  }
+  .cat-row button.del {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 16px;
+    cursor: pointer;
+    width: 26px; height: 26px;
+  }
+  .cat-row button.del:hover { color: var(--coral); }
+
+  .add-cat-btn {
+    width: 100%;
+    background: var(--surface-alt);
+    border: 1px dashed var(--border);
+    color: var(--text-dim);
+    border-radius: var(--radius-sm);
+    padding: 9px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .add-cat-btn:hover { color: var(--text); border-color: var(--text-faint); }
+
+  .cat-total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .cat-total-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-row .name { font-size: 13px; color: var(--text-dim); width: 78px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; background: var(--surface-alt); border-radius: 100px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 100px; }
+  .bar-row .amt { font-size: 12px; color: var(--text-faint); width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .save-btn {
+    width: 100%;
+    background: var(--mint);
+    color: #0B0E14;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .save-btn:active { transform: scale(0.99); }
+  .save-btn.saved { background: var(--surface-alt); color: var(--mint); }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tab-btn.active {
+    background: var(--mint-dim);
+    color: var(--mint);
+    border-color: transparent;
+  }
+
+  .flow-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .flow-header .exp { color: var(--coral); font-weight: 600; }
+  .flow-header .sav { color: var(--mint); font-weight: 600; }
+  .flow-gap {
+    width: 5px;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+
+  .period-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .period-btn {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 7px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .period-btn.active {
+    background: var(--mint-dim);
+    color: var(--mint);
+    border-color: transparent;
+  }
+
+  .flow-bar {
+    display: flex;
+    width: 100%;
+    height: 26px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface-alt);
+  }
+  .flow-seg { height: 100%; }
+
+  .donut-card {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .donut-card svg { flex-shrink: 0; }
+  .donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 160px;
+  }
+  .donut-legend .leg-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+  }
+  .donut-legend .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .donut-legend .name { color: var(--text-dim); flex: 1; }
+  .donut-legend .val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .donut-legend .pct { color: var(--text-faint); font-size: 12px; margin-left: 4px; }
+  .deficit-note {
+    color: var(--coral);
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .alloc-note {
+    font-size: 12px;
+    color: var(--text-faint);
+    margin: -8px 0 12px;
+  }
+
+  .alloc-row {
+    display: grid;
+    grid-template-columns: 1fr 90px 56px 26px;
+    gap: 8px;
+    align-items: center;
+  }
+  .alloc-row input[type=text] {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 14px;
+    min-width: 0;
+  }
+  .alloc-row input[type=number] {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 14px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    width: 100%;
+    min-width: 0;
+  }
+  .alloc-row select {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+  .alloc-row button.del {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 16px;
+    cursor: pointer;
+    width: 26px; height: 26px;
+  }
+  .alloc-row button.del:hover { color: var(--coral); }
+  .alloc-summary {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .alloc-summary .row { display: flex; justify-content: space-between; }
+  .alloc-summary .row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .alloc-summary .row.remain .v.over { color: var(--coral); }
+  .alloc-summary .row.remain .v.under { color: var(--text-faint); }
+
+  .assets-card {
+    margin-top: 14px;
+  }
+  .assets-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .assets-total .amount { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .assets-total .label { font-size: 12px; color: var(--text-faint); }
+
+  .chart-wrap { overflow-x: auto; }
+  .chart-svg-holder { min-width: 100%; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+    padding: 30px 0;
+  }
+
+  .month-history {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hist-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-row .ym { color: var(--text-dim); }
+  .hist-row .sv { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .hist-row .sv.neg { color: var(--coral); }
+  .hist-row .rate { color: var(--text-faint); margin-left: 8px; font-size: 12px; }
+
+  footer.note {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 11px;
+    margin-top: 24px;
+  }
+
+  .calc-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 13px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .calc-summary-row .v { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
+  .calc-summary-row.highlight { color: var(--text); }
+  .calc-summary-row.highlight .v { color: var(--mint); font-size: 16px; font-weight: 700; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 24px;
+  }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    max-width: 320px;
+    width: 100%;
+  }
+  .modal-text {
+    font-size: 14px;
+    color: var(--text);
+    margin: 0 0 18px;
+    text-align: center;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .modal-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--text-dim);
+  }
+  .modal-btn.danger {
+    background: var(--coral);
+    color: #fff;
+    border-color: transparent;
+  }
+  .modal-btn.primary {
+    background: var(--mint);
+    color: #0B0E14;
+    border-color: transparent;
+  }
+  .modal-btn.full {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(221,75,67,0.35);
+    color: var(--coral);
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>자산관리</h1>
+    <div class="month-picker">
+      <button id="prevYear" title="이전 해">«</button>
+      <button id="prevMonth" title="이전 달">‹</button>
+      <div class="month-label-wrap">
+        <span class="month-label" id="monthLabel">2026.09</span>
+        <input type="month" id="monthJumpInput" class="month-jump-input">
+      </div>
+      <button id="nextMonth" title="다음 달">›</button>
+      <button id="nextYear" title="다음 해">»</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="overview">개요</button>
+    <button class="tab-btn" data-tab="trend">자산 현황</button>
+    <button class="tab-btn" data-tab="stocks">주식</button>
+    <button class="tab-btn" data-tab="calc">계산기</button>
+    <button class="tab-btn" data-tab="settings">설정</button>
+  </div>
+
+  <div id="page-overview">
+    <div class="hero">
+      <div class="glow"></div>
+      <p class="hero-label">이번 달 저축액</p>
+      <p class="hero-amount" id="savingsAmount">0만원</p>
+      <div class="hero-sub">
+        <div class="item">
+          <div class="k">저축률</div>
+          <div class="v"><span class="rate-pill" id="ratePill">0%</span></div>
+        </div>
+        <div class="item">
+          <div class="k">급여</div>
+          <div class="v" id="salaryDisplay">0만원</div>
+        </div>
+        <div class="item">
+          <div class="k">지출</div>
+          <div class="v" id="expenseDisplay">0만원</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="flowCard">
+      <h2>이번 달 자금 흐름</h2>
+      <div class="flow-header" id="flowHeader"></div>
+      <div class="flow-bar" id="flowBar"></div>
+      <div class="donut-legend" id="flowLegend" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+  <div id="page-trend" style="display:none;">
+    <div class="card assets-card" id="assetsPieCard">
+      <h2>자산 현황</h2>
+      <div class="assets-total">
+        <div>
+          <div class="label">현재 총자산 (초기자산 + 누적 저축 + 보유 종목 평가금액)</div>
+          <div class="amount" id="totalAssets">0만원</div>
+        </div>
+      </div>
+      <div class="donut-card">
+        <div id="assetPieHolder"></div>
+        <div class="donut-legend" id="assetPieLegend"></div>
+      </div>
+    </div>
+
+    <div class="card" id="stockSummaryCard">
+      <h2>보유 주식</h2>
+      <div class="assets-total">
+        <div>
+          <div class="label">평가금액 합계</div>
+          <div class="amount" id="stockSummaryTotal">0만원</div>
+        </div>
+      </div>
+      <div class="cat-total-row" id="stockSummaryPnlRow" style="display:none;">
+        <span>평가손익 (수익률)</span>
+        <span class="v" id="stockSummaryPnl">0만원 (0%)</span>
+      </div>
+      <div class="cat-total-row" id="realizedPnlSummaryRow" style="display:none;">
+        <span>실현 손익 (누적)</span>
+        <span class="v" id="realizedPnlSummaryValue">0만원</span>
+      </div>
+    </div>
+
+    <div class="card" id="comboChartCard">
+      <h2>자산 추이</h2>
+      <div class="period-toggle">
+        <button class="period-btn active" data-period="month">월별</button>
+        <button class="period-btn" data-period="year">년도별</button>
+      </div>
+      <div class="chart-legend-inline" id="comboLegend"></div>
+      <div class="chart-wrap">
+        <div class="chart-svg-holder" id="comboChartHolder"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-stocks" style="display:none;">
+    <div class="card" id="holdingsCard">
+      <div class="card-header-row">
+        <h2>보유 종목</h2>
+        <div class="card-actions">
+          <button class="mini-reset-btn" id="resetHoldingsBtn">초기화</button>
+          <button class="mini-save-btn" id="addHoldingBtn">+ 종목 추가</button>
+        </div>
+      </div>
+      <div class="default-hint" style="margin-bottom:14px;">현재가는 직접 입력해요 (하루 1~2번 업데이트 추천) · 단위는 원</div>
+      <div class="holdings-list" id="holdingsList"></div>
+      <div class="cat-total-row">
+        <span>평가금액 합계</span>
+        <span class="v" id="holdingsTotal">0만원</span>
+      </div>
+      <div class="cat-total-row" id="holdingsPnlRow" style="display:none;">
+        <span>평가손익 (수익률)</span>
+        <span class="v" id="holdingsPnl">0만원 (0%)</span>
+      </div>
+      <div class="cat-total-row" id="realizedPnlRow" style="display:none;">
+        <span>실현 손익 (누적)</span>
+        <span class="v" id="realizedPnlValue">0만원</span>
+      </div>
+    </div>
+
+    <div class="card" id="sellHistoryCard">
+      <h2>매도 내역</h2>
+      <div class="default-hint" style="margin-bottom:14px;">수량·매도가를 수정하면 손익과 보유 수량에 자동 반영돼요</div>
+      <div class="sell-history-list" id="sellHistoryList"></div>
+    </div>
+  </div>
+
+  <div id="page-calc" style="display:none;">
+    <div class="card">
+      <h2>배분 계산기</h2>
+      <div class="salary-input-row">
+        <input type="number" id="calcSalaryInput" placeholder="0" inputmode="decimal" step="0.1">
+        <span>만원</span>
+      </div>
+      <div class="calc-summary-row">
+        <span>지출 (설정 탭 기준)</span>
+        <span class="v" id="calcExpenseDisplay">0만원</span>
+      </div>
+      <div class="calc-summary-row highlight">
+        <span>예상 저축액</span>
+        <span class="v" id="calcSavingsDisplay">0만원</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>배분 결과</h2>
+      <div class="bar-chart" id="calcBars"></div>
+    </div>
+  </div>
+
+  <div id="page-settings" style="display:none;">
+    <div class="settings-toolbar">
+      <button id="monthResetBtn" class="toolbar-btn danger">이번 달 초기화</button>
+      <button id="manualSaveBtn" class="toolbar-btn primary">저장</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header-row">
+        <h2>급여 입력</h2>
+        <div class="card-actions">
+          <button class="mini-reset-btn" id="resetSalaryBtn">초기화</button>
+          <button class="mini-save-btn" id="saveBtn">저장</button>
+        </div>
+      </div>
+      <div class="salary-input-row">
+        <input type="number" id="salaryInput" placeholder="0" inputmode="decimal" step="0.1">
+        <span>만원</span>
+      </div>
+      <div class="starting-asset-row">
+        <span>초기 자산 (만원, 계산 시작 전 보유 자산)</span>
+        <input type="number" id="startingAssetInput" placeholder="0" inputmode="decimal" step="0.1">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header-row">
+        <h2>지출 항목 설정</h2>
+        <div class="card-actions">
+          <button class="mini-reset-btn" id="resetCategoriesBtn">초기화</button>
+          <button class="mini-save-btn" id="saveCategoriesBtn">저장</button>
+        </div>
+      </div>
+      <div class="default-row">
+        <span class="default-hint" id="categoryDefaultHint">기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요</span>
+        <button class="mini-default-btn" id="setCategoryDefaultBtn">현재를 기본값으로</button>
+      </div>
+      <div class="bar-chart" id="expenseBars" style="margin-bottom:14px;"></div>
+      <div class="cat-list" id="catList"></div>
+      <button class="add-cat-btn" id="addCatBtn">+ 카테고리 추가</button>
+      <div class="cat-total-row">
+        <span>합계</span>
+        <span class="v" id="catTotal">0만원</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header-row">
+        <h2>저축 배분 설정</h2>
+        <div class="card-actions">
+          <button class="mini-reset-btn" id="resetAllocationsBtn">초기화</button>
+          <button class="mini-save-btn" id="saveAllocationsBtn">저장</button>
+        </div>
+      </div>
+      <div class="default-row">
+        <span class="default-hint" id="allocationDefaultHint">기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요</span>
+        <button class="mini-default-btn" id="setAllocationDefaultBtn">현재를 기본값으로</button>
+      </div>
+      <div class="alloc-note" id="allocNote">적금을 고정으로 떼고, 나머지를 비율대로 나눠요</div>
+      <div class="bar-chart" id="allocBars" style="margin-bottom:14px;"></div>
+      <div class="cat-list" id="allocList"></div>
+      <button class="add-cat-btn" id="addAllocBtn">+ 배분 항목 추가</button>
+      <div class="alloc-summary">
+        <div class="row"><span>배분 합계</span><span class="v" id="allocTotal">0만원</span></div>
+        <div class="row remain"><span id="allocRemainLabel">미배분</span><span class="v" id="allocRemain">0만원</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>월별 기록</h2>
+      <div class="month-history" id="historyList"></div>
+    </div>
+  </div>
+
+  <footer class="note">기기 간 동기화가 켜지면 계정 기준으로 저장되고, 꺼져 있으면 이 브라우저에만 저장돼요</footer>
+
+  <div class="modal-overlay" id="confirmModal" style="display:none;">
+    <div class="modal-box">
+      <p class="modal-text" id="confirmModalText">정말 초기화하시겠습니까?</p>
+      <div class="modal-actions">
+        <button class="modal-btn" id="confirmModalCancel" type="button">취소</button>
+        <button class="modal-btn danger" id="confirmModalOk" type="button">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="sellModal" style="display:none;">
+    <div class="modal-box">
+      <p class="modal-text" id="sellModalTitle">매도 입력</p>
+      <div class="sell-modal-fields">
+        <label>매도 수량<input type="number" id="sellQtyInput" step="0.01" inputmode="decimal"></label>
+        <label>매도가(원)<input type="number" id="sellPriceInput" step="1" inputmode="decimal"></label>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn" id="sellModalCancel" type="button">취소</button>
+        <button class="modal-btn danger" id="sellModalOk" type="button">매도 확정</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="sellDetailModal" style="display:none;">
+    <div class="modal-box">
+      <p class="modal-text" id="sellDetailTitle">매도 내역</p>
+      <div class="sell-modal-fields">
+        <label>수량<input type="number" id="sellDetailQtyInput" step="0.01" inputmode="decimal"></label>
+        <label>매도가(원)<input type="number" id="sellDetailPriceInput" step="1" inputmode="decimal"></label>
+      </div>
+      <button class="modal-btn danger full" id="sellDetailDeleteBtn" type="button">이 내역 삭제</button>
+      <div class="modal-actions">
+        <button class="modal-btn" id="sellDetailCancelBtn" type="button">닫기</button>
+        <button class="modal-btn primary" id="sellDetailSaveBtn" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORE_KEY = 'assetDashboard_v1';
+
+  function defaultCategories(){
+    return [
+      {id: 'c1', name: '주거/월세', amount: 0},
+      {id: 'c2', name: '통신비', amount: 0},
+      {id: 'c3', name: '보험', amount: 0},
+      {id: 'c4', name: '구독서비스', amount: 0}
+    ];
+  }
+  function defaultAllocations(){
+    return [
+      {id: 'a1', name: '적금', type: 'fixed', value: 50},
+      {id: 'a2', name: '주식', type: 'ratio', value: 5},
+      {id: 'a3', name: '연금저축', type: 'ratio', value: 5}
+    ];
+  }
+
+  function cloneItems(arr){
+    if (!arr || !arr.length) return null;
+    return arr.map(function(x){ return Object.assign({}, x); });
+  }
+
+  var state = {
+    categories: defaultCategories(),
+    startingAsset: 0,
+    currentMonth: null, // 'YYYY-MM'
+    salaryDraft: 0,
+    trendPeriod: 'month',
+    history: {}, // { 'YYYY-MM': {salary, expenseTotal, savings, savingsRate, categories:[...]} }
+    allocations: defaultAllocations(),
+    categoryDefaults: null,
+    allocationDefaults: null,
+    holdings: [],
+    realizedPnl: 0,
+    sellHistory: []
+  };
+
+  function stateSnapshot(){
+    return {
+      categories: state.categories,
+      startingAsset: state.startingAsset,
+      history: state.history,
+      allocations: state.allocations,
+      categoryDefaults: state.categoryDefaults,
+      allocationDefaults: state.allocationDefaults,
+      holdings: state.holdings,
+      realizedPnl: state.realizedPnl,
+      sellHistory: state.sellHistory
+    };
+  }
+
+  function renderAll(){
+    renderCategories();
+    renderAllocList();
+    loadMonthInputs();
+    renderAssets();
+    renderCalc();
+    renderDefaultHints();
+    renderHoldingsList();
+    renderSellHistory();
+  }
+
+  function renderDefaultHints(){
+    var catHint = document.getElementById('categoryDefaultHint');
+    var allocHint = document.getElementById('allocationDefaultHint');
+    if (catHint) {
+      catHint.textContent = (state.categoryDefaults && state.categoryDefaults.length)
+        ? '저장된 기본값으로 초기화돼요'
+        : '기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요';
+    }
+    if (allocHint) {
+      allocHint.textContent = (state.allocationDefaults && state.allocationDefaults.length)
+        ? '저장된 기본값으로 초기화돼요'
+        : '기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요';
+    }
+  }
+
+  function load(){
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        state.categories = parsed.categories || state.categories;
+        state.startingAsset = parsed.startingAsset || 0;
+        state.history = parsed.history || {};
+        state.allocations = parsed.allocations || state.allocations;
+        state.categoryDefaults = parsed.categoryDefaults || null;
+        state.allocationDefaults = parsed.allocationDefaults || null;
+        state.holdings = parsed.holdings || [];
+        state.realizedPnl = Number(parsed.realizedPnl) || 0;
+        state.sellHistory = parsed.sellHistory || [];
+      }
+    } catch(e) { console.error('load failed', e); }
+    var now = new Date();
+    state.currentMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  }
+
+  function persist(){
+    var json = JSON.stringify(stateSnapshot());
+    try {
+      localStorage.setItem(STORE_KEY, json);
+    } catch(e) { console.error('save failed', e); }
+  }
+
+  function fmt(n){
+    n = n || 0;
+    var rounded = Math.round(n * 10) / 10;
+    var opts = rounded % 1 === 0 ? {maximumFractionDigits: 0} : {maximumFractionDigits: 1};
+    return rounded.toLocaleString('ko-KR', opts) + '만원';
+  }
+
+  function catTotal(){
+    return state.categories.reduce(function(s,c){ return s + (Number(c.amount)||0); }, 0);
+  }
+
+  function currentSalary(){
+    var rec = state.history[state.currentMonth];
+    if (document.activeElement !== document.getElementById('salaryInput')) {
+      // reflect stored record if exists, else draft
+    }
+    return Number(document.getElementById('salaryInput').value) || 0;
+  }
+
+  function monthLabelText(ym){
+    var parts = ym.split('-');
+    return parts[0] + '.' + parts[1];
+  }
+
+  function shiftMonth(ym, delta){
+    var parts = ym.split('-').map(Number);
+    var d = new Date(parts[0], parts[1]-1+delta, 1);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+
+  function renderCategories(){
+    var list = document.getElementById('catList');
+    list.innerHTML = '';
+    state.categories.forEach(function(c){
+      var row = document.createElement('div');
+      row.className = 'cat-row';
+      row.innerHTML =
+        '<input type="text" value="' + escapeHtml(c.name) + '" data-id="' + c.id + '" data-field="name">' +
+        '<input type="number" value="' + c.amount + '" data-id="' + c.id + '" data-field="amount" inputmode="decimal" step="0.1">' +
+        '<button class="del" data-id="' + c.id + '">×</button>';
+      list.appendChild(row);
+    });
+    document.getElementById('catTotal').textContent = fmt(catTotal());
+    renderBars();
+  }
+
+  function escapeHtml(s){
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  var barColors = ['#2F8FFF', '#7566DD', '#C6820A', '#DD4B43', '#3FAE6E', '#D0629C'];
+
+  function renderBars(){
+    var holder = document.getElementById('expenseBars');
+    var total = catTotal();
+    if (total === 0) {
+      holder.innerHTML = '<div class="empty-state">카테고리에 금액을 입력해보세요</div>';
+      return;
+    }
+    holder.innerHTML = '';
+    state.categories.forEach(function(c, i){
+      var amt = Number(c.amount) || 0;
+      var pct = total > 0 ? (amt/total*100) : 0;
+      var row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML =
+        '<div class="name">' + escapeHtml(c.name || '이름없음') + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' + barColors[i % barColors.length] + ';"></div></div>' +
+        '<div class="amt">' + fmt(amt) + '</div>';
+      holder.appendChild(row);
+    });
+  }
+
+  function recalcHero(){
+    var salary = currentSalary();
+    var expense = catTotal();
+    var rawSavings = salary - expense;
+    var savings = rawSavings;
+    if (rawSavings > 0) {
+      var calc = computeAllocations(rawSavings);
+      savings = state.allocations.reduce(function(s,a){ return s + (calc.amounts[a.id] || 0); }, 0);
+    }
+    var rate = salary > 0 ? (savings/salary*100) : 0;
+
+    var amtEl = document.getElementById('savingsAmount');
+    amtEl.textContent = fmt(savings);
+    amtEl.className = 'hero-amount ' + (savings < 0 ? 'negative' : 'positive');
+
+    var pill = document.getElementById('ratePill');
+    pill.textContent = rate.toFixed(1) + '%';
+    pill.style.color = rate < 0 ? 'var(--coral)' : 'var(--mint)';
+    pill.style.background = rate < 0 ? 'rgba(221,75,67,0.14)' : 'var(--mint-dim)';
+
+    document.getElementById('salaryDisplay').textContent = fmt(salary);
+    document.getElementById('expenseDisplay').textContent = fmt(expense);
+
+    renderFlowChart(salary, expense, rawSavings);
+    renderAllocations(rawSavings);
+  }
+
+  var expenseColors = ['#DD4B43', '#E0834F', '#C6820A', '#D0629C', '#E8988F'];
+  var savingsColors = ['#2F8FFF', '#7566DD', '#4A90D9', '#3FAE6E', '#4AB4C9'];
+  var palette = ['#2F8FFF', '#7566DD', '#4A90D9', '#C6820A', '#DD4B43', '#3FAE6E', '#D0629C', '#4AB4C9', '#8B93A1'];
+
+  function legendRow(name, amt, pct, color){
+    return '<div class="leg-row"><span class="dot" style="background:' + color + ';"></span>' +
+      '<span class="name">' + escapeHtml(name || '이름없음') + '</span>' +
+      '<span class="val">' + fmt(amt) + '</span>' +
+      '<span class="pct">' + Math.round(pct) + '%</span></div>';
+  }
+
+  function renderFlowChart(salary, expense, savings){
+    var track = document.getElementById('flowBar');
+    var legend = document.getElementById('flowLegend');
+    var header = document.getElementById('flowHeader');
+    if (salary <= 0) {
+      track.innerHTML = '';
+      header.innerHTML = '';
+      legend.innerHTML = '<div class="empty-state" style="padding:0;">급여를 입력하면 흐름이 표시돼요</div>';
+      return;
+    }
+
+    var isDeficit = expense > salary;
+    var expPct = Math.min(expense/salary*100, 100);
+    var savPct = Math.max(100 - expPct, 0);
+    header.innerHTML =
+      '<span class="exp">● 지출 ' + fmt(expense) + ' (' + Math.round(expPct) + '%)</span>' +
+      '<span class="sav">● 저축 ' + fmt(Math.max(savings,0)) + ' (' + Math.round(savPct) + '%)</span>';
+
+    if (isDeficit) {
+      track.innerHTML = '<div class="flow-seg" style="width:100%; background:#DD4B43;"></div>';
+      var lh = '';
+      state.categories.forEach(function(c, i){
+        var amt = Number(c.amount) || 0;
+        if (amt <= 0) return;
+        lh += legendRow(c.name, amt, expense > 0 ? amt/expense*100 : 0, expenseColors[i % expenseColors.length]);
+      });
+      lh += '<div class="deficit-note">지출이 급여를 ' + fmt(expense - salary) + ' 초과했어요</div>';
+      legend.innerHTML = lh;
+      return;
+    }
+
+    var expSegs = '';
+    var savSegs = '';
+    var lh = '';
+    state.categories.forEach(function(c, i){
+      var amt = Number(c.amount) || 0;
+      if (amt <= 0) return;
+      var pct = amt/salary*100;
+      var color = expenseColors[i % expenseColors.length];
+      expSegs += '<div class="flow-seg" style="width:' + pct + '%; background:' + color + ';"></div>';
+      lh += legendRow(c.name, amt, pct, color);
+    });
+
+    var calc = computeAllocations(savings);
+    var allocSum = 0;
+    state.allocations.forEach(function(a, i){
+      var amt = calc.amounts[a.id] || 0;
+      allocSum += amt;
+      if (amt <= 0) return;
+      var pct = amt/salary*100;
+      var color = savingsColors[i % savingsColors.length];
+      savSegs += '<div class="flow-seg" style="width:' + pct + '%; background:' + color + ';"></div>';
+      lh += legendRow(a.name, amt, pct, color);
+    });
+
+    var remain = savings - allocSum;
+    if (remain > 0.05) {
+      var pct = remain/salary*100;
+      savSegs += '<div class="flow-seg" style="width:' + pct + '%; background:#C7CCD3;"></div>';
+      lh += legendRow('미배분', remain, pct, '#C7CCD3');
+    }
+
+    var segs = expSegs;
+    if (expSegs && savSegs) segs += '<div class="flow-gap"></div>';
+    segs += savSegs;
+
+    track.innerHTML = segs;
+    legend.innerHTML = lh || '<div class="empty-state" style="padding:0;">지출/저축 항목에 금액을 입력해보세요</div>';
+  }
+
+  function renderAllocList(){
+    var list = document.getElementById('allocList');
+    list.innerHTML = '';
+    state.allocations.forEach(function(a){
+      var row = document.createElement('div');
+      row.className = 'alloc-row';
+      row.innerHTML =
+        '<input type="text" value="' + escapeHtml(a.name) + '" data-id="' + a.id + '" data-field="name">' +
+        '<input type="number" value="' + a.value + '" data-id="' + a.id + '" data-field="value" inputmode="decimal" step="0.1">' +
+        '<select data-id="' + a.id + '" data-field="type">' +
+          '<option value="fixed"' + (a.type==='fixed'?' selected':'') + '>만원(고정)</option>' +
+          '<option value="ratio"' + (a.type==='ratio'?' selected':'') + '>비율</option>' +
+        '</select>' +
+        '<button class="del" data-id="' + a.id + '">×</button>';
+      list.appendChild(row);
+    });
+  }
+
+  function computeAllocations(savings){
+    var fixedItems = state.allocations.filter(function(a){ return a.type === 'fixed'; });
+    var ratioItems = state.allocations.filter(function(a){ return a.type === 'ratio'; });
+    var fixedTotal = fixedItems.reduce(function(s,a){ return s + (Number(a.value)||0); }, 0);
+    var remaining = savings - fixedTotal;
+    var ratioWeightSum = ratioItems.reduce(function(s,a){ return s + (Number(a.value)||0); }, 0);
+    var amounts = {};
+    state.allocations.forEach(function(a){
+      if (a.type === 'fixed') {
+        amounts[a.id] = Number(a.value) || 0;
+      } else {
+        var w = Number(a.value) || 0;
+        amounts[a.id] = ratioWeightSum > 0 ? remaining * (w / ratioWeightSum) : 0;
+      }
+    });
+    return {fixedTotal: fixedTotal, remaining: remaining, ratioWeightSum: ratioWeightSum, amounts: amounts};
+  }
+
+  function renderAllocations(savings){
+    var calc = computeAllocations(savings);
+    var note = document.getElementById('allocNote');
+    if (calc.fixedTotal > 0) {
+      note.textContent = '고정 ' + fmt(calc.fixedTotal) + ' 제외 나머지 ' + fmt(Math.max(calc.remaining,0)) + '을 비율대로 배분';
+    } else {
+      note.textContent = '비율대로 배분해요';
+    }
+
+    var bars = document.getElementById('allocBars');
+    var base = Math.max(savings, 0.0001);
+    if (state.allocations.length === 0 || savings <= 0) {
+      bars.innerHTML = savings <= 0
+        ? '<div class="empty-state">저축액이 있어야 배분 금액을 계산할 수 있어요</div>'
+        : '<div class="empty-state">배분 항목을 추가해보세요</div>';
+    } else {
+      bars.innerHTML = '';
+      state.allocations.forEach(function(a, i){
+        var amt = calc.amounts[a.id] || 0;
+        var pct = Math.max(Math.min(amt/base*100, 100), 0);
+        var row = document.createElement('div');
+        row.className = 'bar-row';
+        var suffix = '';
+        if (a.type === 'ratio' && calc.ratioWeightSum > 0) {
+          suffix = ' (' + Math.round((Number(a.value)||0)/calc.ratioWeightSum*100) + '%)';
+        }
+        row.innerHTML =
+          '<div class="name">' + escapeHtml(a.name || '이름없음') + '</div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' + barColors[i % barColors.length] + ';"></div></div>' +
+          '<div class="amt">' + fmt(amt) + suffix + '</div>';
+        bars.appendChild(row);
+      });
+    }
+
+    var allocTotal = state.allocations.reduce(function(s,a){ return s + (calc.amounts[a.id]||0); }, 0);
+    document.getElementById('allocTotal').textContent = fmt(allocTotal);
+    var remain = savings - allocTotal;
+    var remainLabelEl = document.getElementById('allocRemainLabel');
+    var remainEl = document.getElementById('allocRemain');
+    if (remain < 0) {
+      remainLabelEl.textContent = '초과 배분';
+      remainEl.textContent = fmt(Math.abs(remain));
+      remainEl.className = 'v over';
+    } else {
+      remainLabelEl.textContent = '미배분';
+      remainEl.textContent = fmt(remain);
+      remainEl.className = 'v under';
+    }
+  }
+
+  function renderCalc(){
+    var salaryEl = document.getElementById('calcSalaryInput');
+    if (!salaryEl) return;
+    var salary = Number(salaryEl.value) || 0;
+    var expense = catTotal();
+    var savings = salary - expense;
+    var calc = computeAllocations(savings);
+
+    document.getElementById('calcExpenseDisplay').textContent = fmt(expense);
+    var savingsEl = document.getElementById('calcSavingsDisplay');
+    savingsEl.textContent = fmt(savings);
+    savingsEl.style.color = savings < 0 ? 'var(--coral)' : '';
+
+    var bars = document.getElementById('calcBars');
+    var base = Math.max(savings, 0.0001);
+    if (state.allocations.length === 0) {
+      bars.innerHTML = '<div class="empty-state">설정 탭에서 저축 배분 항목을 추가해보세요</div>';
+      return;
+    }
+    if (savings <= 0) {
+      bars.innerHTML = '<div class="empty-state">급여를 입력하면 배분 결과가 표시돼요</div>';
+      return;
+    }
+    bars.innerHTML = '';
+    state.allocations.forEach(function(a, i){
+      var amt = calc.amounts[a.id] || 0;
+      var pct = Math.max(Math.min(amt/base*100, 100), 0);
+      var row = document.createElement('div');
+      row.className = 'bar-row';
+      var suffix = '';
+      if (a.type === 'ratio' && calc.ratioWeightSum > 0) {
+        suffix = ' (' + Math.round((Number(a.value)||0)/calc.ratioWeightSum*100) + '%)';
+      }
+      row.innerHTML =
+        '<div class="name">' + escapeHtml(a.name || '이름없음') + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' + barColors[i % barColors.length] + ';"></div></div>' +
+        '<div class="amt">' + fmt(amt) + suffix + '</div>';
+      bars.appendChild(row);
+    });
+  }
+
+  function loadMonthInputs(){
+    document.getElementById('monthLabel').textContent = monthLabelText(state.currentMonth);
+    document.getElementById('monthJumpInput').value = state.currentMonth;
+    var rec = state.history[state.currentMonth];
+    document.getElementById('salaryInput').value = rec ? rec.salary : '';
+    document.getElementById('startingAssetInput').value = state.startingAsset || '';
+    recalcHero();
+  }
+
+  function saveCurrentMonth(){
+    var salary = Number(document.getElementById('salaryInput').value) || 0;
+    var expense = catTotal();
+    var savings = salary - expense;
+    var rate = salary > 0 ? (savings/salary*100) : 0;
+    var calc = computeAllocations(savings);
+    var allocationBreakdown = state.allocations
+      .map(function(a){ return {name: a.name || '이름없음', amount: calc.amounts[a.id] || 0}; })
+      .filter(function(x){ return x.amount > 0.001; });
+    var allocSum = allocationBreakdown.reduce(function(s,x){ return s + x.amount; }, 0);
+    var unallocated = savings - allocSum;
+    if (unallocated > 0.05) allocationBreakdown.push({name: '미배분', amount: unallocated});
+    state.history[state.currentMonth] = {
+      salary: salary,
+      expenseTotal: expense,
+      savings: savings,
+      savingsRate: rate,
+      categories: state.categories.map(function(c){ return {name: c.name, amount: c.amount}; }),
+      allocationBreakdown: allocationBreakdown
+    };
+    persist();
+    loadMonthInputs();
+    renderAssets();
+  }
+
+  function holdingEvalManwon(h){
+    var qty = Number(h.quantity) || 0;
+    var price = Number(h.currentPrice) || 0;
+    return (qty * price) / 10000;
+  }
+
+  function holdingCostManwon(h){
+    var qty = Number(h.quantity) || 0;
+    var avg = Number(h.avgPrice) || 0;
+    return avg > 0 ? (qty * avg) / 10000 : 0;
+  }
+
+  function holdingsTotal(){
+    return state.holdings.reduce(function(s,h){ return s + holdingEvalManwon(h); }, 0);
+  }
+
+  function holdingsPnl(){
+    var cost = state.holdings.reduce(function(s,h){ return s + holdingCostManwon(h); }, 0);
+    if (cost <= 0) return null;
+    var evalTotal = state.holdings.reduce(function(s,h){
+      return s + (Number(h.avgPrice) > 0 ? holdingEvalManwon(h) : 0);
+    }, 0);
+    var pnl = evalTotal - cost;
+    var pct = (pnl / cost) * 100;
+    return {pnl: pnl, pct: pct};
+  }
+
+  function totalAssets(){
+    var sum = Number(state.startingAsset) || 0;
+    Object.keys(state.history).forEach(function(ym){
+      sum += state.history[ym].savings;
+    });
+    sum += holdingsTotal();
+    sum += Number(state.realizedPnl) || 0;
+    return sum;
+  }
+
+  function computeAssetComposition(){
+    var comp = {};
+    if (state.startingAsset) comp['초기자산'] = Number(state.startingAsset);
+    var months = Object.keys(state.history).sort();
+    months.forEach(function(ym){
+      var rec = state.history[ym];
+      var items = rec.allocationBreakdown || [{name: '저축', amount: rec.savings}];
+      items.forEach(function(it){
+        comp[it.name] = (comp[it.name] || 0) + it.amount;
+      });
+    });
+    state.holdings.forEach(function(h){
+      var val = holdingEvalManwon(h);
+      if (val > 0) comp[h.name || '이름없는 종목'] = (comp[h.name || '이름없는 종목'] || 0) + val;
+    });
+    var realized = Number(state.realizedPnl) || 0;
+    if (realized > 0) comp['실현손익'] = (comp['실현손익'] || 0) + realized;
+    return comp;
+  }
+
+  function showTooltip(anchorId, evt, text){
+    var anchor = document.getElementById(anchorId);
+    if (!anchor) return;
+    var tip = anchor.querySelector('.chart-tooltip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.className = 'chart-tooltip';
+      anchor.appendChild(tip);
+    }
+    var rect = anchor.getBoundingClientRect();
+    var x = evt.clientX - rect.left;
+    var y = evt.clientY - rect.top;
+    tip.textContent = text;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+    tip.style.display = 'block';
+  }
+
+  function hideTooltip(anchorId){
+    var anchor = document.getElementById(anchorId);
+    var tip = anchor && anchor.querySelector('.chart-tooltip');
+    if (tip) tip.style.display = 'none';
+  }
+
+  function reverseSellRecord(record){
+    state.realizedPnl = (Number(state.realizedPnl) || 0) - (Number(record.gain) || 0);
+    var h = state.holdings.find(function(x){ return x.id === record.holdingId; });
+    if (h) {
+      h.quantity = (Number(h.quantity) || 0) + (Number(record.quantity) || 0);
+    } else {
+      state.holdings.push({
+        id: record.holdingId,
+        name: record.holdingName,
+        quantity: Number(record.quantity) || 0,
+        avgPrice: Number(record.avgPriceAtSale) || 0,
+        currentPrice: Number(record.sellPrice) || 0
+      });
+    }
+  }
+
+  function applySellRecordEffect(record){
+    var h = state.holdings.find(function(x){ return x.id === record.holdingId; });
+    if (!h) return;
+    var avgPrice = Number(record.avgPriceAtSale) || 0;
+    var qty = Number(record.quantity) || 0;
+    var gain = avgPrice > 0 ? (qty * (Number(record.sellPrice) - avgPrice)) / 10000 : 0;
+    record.gain = gain;
+    state.realizedPnl = (Number(state.realizedPnl) || 0) + gain;
+    h.quantity = (Number(h.quantity) || 0) - qty;
+    if (h.quantity <= 0.0001) {
+      state.holdings = state.holdings.filter(function(x){ return x.id !== h.id; });
+    }
+  }
+
+  function formatSellDate(iso){
+    if (!iso) return '';
+    return iso.replace(/-/g, '.');
+  }
+
+  function renderSellHistory(){
+    var list = document.getElementById('sellHistoryList');
+    if (!list) return;
+    var records = state.sellHistory.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    if (records.length === 0) {
+      list.innerHTML = '<div class="empty-state">매도 내역이 없어요</div>';
+      return;
+    }
+    list.innerHTML = '';
+    records.forEach(function(r){
+      var gain = Number(r.gain) || 0;
+      var hasGain = Number(r.avgPriceAtSale) > 0;
+      var cls = gain >= 0 ? 'positive' : 'negative';
+      var sign = gain >= 0 ? '+' : '';
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'sh-summary-row';
+      row.setAttribute('data-id', r.id);
+      row.innerHTML =
+        '<div class="sh-summary-left">' +
+          '<span class="sh-date">' + formatSellDate(r.date) + '</span>' +
+          '<span class="sh-name">' + escapeHtml(r.holdingName || '이름없는 종목') + '</span>' +
+          '<span class="sh-qty">' + r.quantity + '주 · ' + Number(r.sellPrice).toLocaleString('ko-KR') + '원</span>' +
+        '</div>' +
+        (hasGain ? '<span class="pnl ' + cls + '">' + sign + fmt(gain) + '</span>' : '<span class="sh-qty">-</span>');
+      list.appendChild(row);
+    });
+  }
+
+  function renderHoldingsList(){
+    var list = document.getElementById('holdingsList');
+    if (!list) return;
+    if (state.holdings.length === 0) {
+      list.innerHTML = '<div class="empty-state">보유 종목을 추가해보세요</div>';
+    } else {
+      list.innerHTML = '';
+      state.holdings.forEach(function(h){
+        var evalAmt = holdingEvalManwon(h);
+        var avgPrice = Number(h.avgPrice) || 0;
+        var qty = Number(h.quantity) || 0;
+        var currentPrice = Number(h.currentPrice) || 0;
+        var pnlHtml = '';
+        if (avgPrice > 0) {
+          var pnlManwon = (qty * (currentPrice - avgPrice)) / 10000;
+          var pnlPct = (currentPrice/avgPrice - 1) * 100;
+          var cls = pnlManwon >= 0 ? 'positive' : 'negative';
+          var sign = pnlManwon >= 0 ? '+' : '';
+          pnlHtml = '<span class="pnl ' + cls + '">' + sign + fmt(pnlManwon) + ' (' + sign + pnlPct.toFixed(1) + '%)</span>';
+        }
+        var row = document.createElement('div');
+        row.className = 'holding-row';
+        row.innerHTML =
+          '<div class="holding-top">' +
+            '<input type="text" value="' + escapeHtml(h.name) + '" data-id="' + h.id + '" data-field="name" placeholder="종목명">' +
+            '<button class="sell-btn" data-id="' + h.id + '">매도</button>' +
+            '<button class="del" data-id="' + h.id + '">×</button>' +
+          '</div>' +
+          '<div class="holding-fields">' +
+            '<label>수량<input type="number" value="' + h.quantity + '" data-id="' + h.id + '" data-field="quantity" step="0.01" inputmode="decimal"></label>' +
+            '<label>평단가(원)<input type="number" value="' + h.avgPrice + '" data-id="' + h.id + '" data-field="avgPrice" step="1" inputmode="decimal"></label>' +
+            '<label>현재가(원)<input type="number" value="' + h.currentPrice + '" data-id="' + h.id + '" data-field="currentPrice" step="1" inputmode="decimal"></label>' +
+          '</div>' +
+          '<div class="holding-result">' +
+            '<span class="eval">' + fmt(evalAmt) + '</span>' +
+            pnlHtml +
+          '</div>';
+        list.appendChild(row);
+      });
+    }
+    renderHoldingsSummary();
+  }
+
+  function renderHoldingsSummary(){
+    var total = holdingsTotal();
+    var pnl = holdingsPnl();
+
+    document.getElementById('holdingsTotal').textContent = fmt(total);
+    var pnlRow = document.getElementById('holdingsPnlRow');
+    var pnlEl = document.getElementById('holdingsPnl');
+    var summaryTotalEl = document.getElementById('stockSummaryTotal');
+    var summaryPnlRow = document.getElementById('stockSummaryPnlRow');
+    var summaryPnlEl = document.getElementById('stockSummaryPnl');
+
+    if (summaryTotalEl) summaryTotalEl.textContent = fmt(total);
+
+    if (!pnl) {
+      pnlRow.style.display = 'none';
+      if (summaryPnlRow) summaryPnlRow.style.display = 'none';
+    } else {
+      var sign = pnl.pnl >= 0 ? '+' : '';
+      var text = sign + fmt(pnl.pnl) + ' (' + sign + pnl.pct.toFixed(1) + '%)';
+      var cls = 'v ' + (pnl.pnl >= 0 ? 'pnl-positive' : 'pnl-negative');
+
+      pnlRow.style.display = '';
+      pnlEl.textContent = text;
+      pnlEl.className = cls;
+
+      if (summaryPnlRow) {
+        summaryPnlRow.style.display = '';
+        summaryPnlEl.textContent = text;
+        summaryPnlEl.className = cls;
+      }
+    }
+
+    var realized = Number(state.realizedPnl) || 0;
+    var realizedRow = document.getElementById('realizedPnlRow');
+    var realizedEl = document.getElementById('realizedPnlValue');
+    var realizedSummaryRow = document.getElementById('realizedPnlSummaryRow');
+    var realizedSummaryEl = document.getElementById('realizedPnlSummaryValue');
+    if (realized === 0) {
+      realizedRow.style.display = 'none';
+      if (realizedSummaryRow) realizedSummaryRow.style.display = 'none';
+    } else {
+      var rSign = realized >= 0 ? '+' : '';
+      var rText = rSign + fmt(realized);
+      var rCls = 'v ' + (realized >= 0 ? 'pnl-positive' : 'pnl-negative');
+      realizedRow.style.display = '';
+      realizedEl.textContent = rText;
+      realizedEl.className = rCls;
+      if (realizedSummaryRow) {
+        realizedSummaryRow.style.display = '';
+        realizedSummaryEl.textContent = rText;
+        realizedSummaryEl.className = rCls;
+      }
+    }
+  }
+
+  function renderAssetPie(){
+    var holder = document.getElementById('assetPieHolder');
+    var legend = document.getElementById('assetPieLegend');
+    hideTooltip('assetsPieCard');
+    var comp = computeAssetComposition();
+    var entries = Object.keys(comp)
+      .map(function(k){ return {name: k, amount: comp[k]}; })
+      .filter(function(e){ return e.amount > 0.01; })
+      .sort(function(a,b){ return b.amount - a.amount; });
+    var total = entries.reduce(function(s,e){ return s + e.amount; }, 0);
+
+    if (total <= 0) {
+      holder.innerHTML = '';
+      legend.innerHTML = '<div class="empty-state" style="padding:0;">기록을 저장하면 자산 구성이 표시돼요</div>';
+      return;
+    }
+
+    var size = 168, r = 62, cx = size/2, cy = size/2, sw = 20;
+    var circ = 2 * Math.PI * r;
+    var segs = '', off = 0, lh = '';
+    entries.forEach(function(e, i){
+      var frac = e.amount/total;
+      var len = frac * circ;
+      var pct = frac*100;
+      var color = palette[i % palette.length];
+      segs += '<circle class="pie-slice" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+sw+'" ' +
+        'stroke-dasharray="'+len+' '+(circ-len)+'" stroke-dashoffset="'+(-off*circ)+'" ' +
+        'stroke-linecap="butt" transform="rotate(-90 '+cx+' '+cy+')" ' +
+        'data-name="'+escapeHtml(e.name)+'" data-amount="'+e.amount+'" data-pct="'+pct.toFixed(1)+'" />';
+      off += frac;
+      lh += '<div class="leg-row"><span class="dot" style="background:'+color+';"></span>' +
+        '<span class="name">'+escapeHtml(e.name)+'</span><span class="pct">'+Math.round(pct)+'%</span></div>';
+    });
+
+    holder.innerHTML =
+      '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">' +
+        '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#E2E5EA" stroke-width="'+sw+'" />' +
+        segs +
+        '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-size="11" fill="#8B93A1">총자산</text>' +
+        '<text x="'+cx+'" y="'+(cy+18)+'" text-anchor="middle" font-size="17" font-weight="700" fill="#1A1D24">'+fmt(total)+'</text>' +
+      '</svg>';
+    legend.innerHTML = lh;
+  }
+
+  function buildCumulativeSeries(){
+    var months = Object.keys(state.history).sort();
+    var running = {};
+    if (state.startingAsset) running['초기자산'] = Number(state.startingAsset);
+    var series = [];
+    months.forEach(function(ym){
+      var rec = state.history[ym];
+      var items = rec.allocationBreakdown || [{name: '저축', amount: rec.savings}];
+      items.forEach(function(it){
+        running[it.name] = (running[it.name] || 0) + it.amount;
+      });
+      var total = Object.keys(running).reduce(function(s,k){ return s + running[k]; }, 0);
+      series.push({ym: ym, composition: Object.assign({}, running), total: total});
+    });
+    return series;
+  }
+
+  function toYearlySeries(series){
+    var byYear = {};
+    series.forEach(function(pt){
+      byYear[pt.ym.slice(0,4)] = pt;
+    });
+    return Object.keys(byYear).sort().map(function(y){
+      var pt = byYear[y];
+      return {label: y + '년', composition: pt.composition, total: pt.total};
+    });
+  }
+
+  function renderComboChart(){
+    var holder = document.getElementById('comboChartHolder');
+    var legend = document.getElementById('comboLegend');
+    hideTooltip('comboChartCard');
+
+    var rawSeries = buildCumulativeSeries();
+    if (rawSeries.length === 0) {
+      holder.innerHTML = '<div class="empty-state">기록을 저장하면 자산 추이가 표시됩니다</div>';
+      legend.innerHTML = '';
+      return;
+    }
+
+    var series = state.trendPeriod === 'year'
+      ? toYearlySeries(rawSeries)
+      : rawSeries.map(function(pt){ return {label: pt.ym.slice(2), composition: pt.composition, total: pt.total}; });
+
+    var nameTotals = {};
+    series.forEach(function(pt){
+      Object.keys(pt.composition).forEach(function(k){
+        if (pt.composition[k] > 0) nameTotals[k] = (nameTotals[k] || 0) + pt.composition[k];
+      });
+    });
+    var names = Object.keys(nameTotals).sort(function(a,b){ return nameTotals[b] - nameTotals[a]; });
+    var colorFor = {};
+    names.forEach(function(n, i){ colorFor[n] = palette[i % palette.length]; });
+    legend.innerHTML = names.map(function(n){
+      return '<div class="leg-item"><span class="dot" style="background:'+colorFor[n]+';"></span>' + escapeHtml(n) + '</div>';
+    }).join('') + '<div class="leg-item"><span class="dot" style="background:#1A1D24;"></span>총자산 추이</div>';
+
+    var w = Math.max(series.length * 56, 280);
+    var h = 220;
+    var padTop = 16, padBottom = 26;
+    var chartH = h - padTop - padBottom;
+    var maxTotal = Math.max.apply(null, series.map(function(p){ return p.total; }).concat([0]));
+    var minTotal = Math.min.apply(null, series.map(function(p){ return p.total; }).concat([0]));
+    var range = (maxTotal - minTotal) || 1;
+    var stepX = w / series.length;
+    var barW = Math.min(28, stepX * 0.5);
+
+    function yFor(v){ return padTop + (1 - (v - minTotal)/range) * chartH; }
+    var zeroY = yFor(0);
+
+    var barsHtml = '';
+    series.forEach(function(pt, i){
+      var cx = stepX*i + stepX/2;
+      var x = cx - barW/2;
+      var yCursor = zeroY;
+      names.forEach(function(n){
+        var val = pt.composition[n];
+        if (!val || val <= 0) return;
+        var segH = (val/range) * chartH;
+        var segY = yCursor - segH;
+        var pct = pt.total > 0 ? (val/pt.total*100) : 0;
+        barsHtml += '<rect class="combo-bar-seg" x="'+x.toFixed(1)+'" y="'+segY.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(segH,0).toFixed(1)+'" fill="'+colorFor[n]+'" rx="2" ' +
+          'data-name="'+escapeHtml(n)+'" data-amount="'+val+'" data-pct="'+pct.toFixed(1)+'" data-label="'+escapeHtml(pt.label)+'" />';
+        yCursor = segY;
+      });
+    });
+
+    var lineD = series.map(function(pt, i){
+      var cx = stepX*i + stepX/2;
+      return (i===0?'M':'L') + cx.toFixed(1) + ',' + yFor(pt.total).toFixed(1);
+    }).join(' ');
+
+    var dots = series.map(function(pt, i){
+      var cx = stepX*i + stepX/2;
+      var y = yFor(pt.total);
+      var prev = i > 0 ? series[i-1].total : null;
+      var change = (prev !== null && prev !== 0) ? ((pt.total - prev)/Math.abs(prev)*100) : null;
+      return '<circle class="pt-hit" cx="'+cx.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="11" fill="transparent" ' +
+        'data-label="'+escapeHtml(pt.label)+'" data-value="'+pt.total+'" data-change="'+(change===null?'':change.toFixed(1))+'" />' +
+        '<circle cx="'+cx.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5" fill="#1A1D24" stroke="#FFFFFF" stroke-width="1.5" style="pointer-events:none;" />';
+    }).join('');
+
+    var labels = series.map(function(pt, i){
+      var cx = stepX*i + stepX/2;
+      return '<text x="'+cx.toFixed(1)+'" y="'+(h-8)+'" font-size="10" fill="#8B93A1" text-anchor="middle">'+pt.label+'</text>';
+    }).join('');
+
+    holder.innerHTML =
+      '<svg viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" xmlns="http://www.w3.org/2000/svg">' +
+        barsHtml +
+        '<path d="'+lineD+'" fill="none" stroke="#1A1D24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" />' +
+        dots + labels +
+      '</svg>';
+  }
+
+  function renderAssets(){
+    document.getElementById('totalAssets').textContent = fmt(totalAssets());
+    renderAssetPie();
+    renderComboChart();
+
+    var months = Object.keys(state.history).sort();
+    var hlist = document.getElementById('historyList');
+    hlist.innerHTML = '';
+    months.slice().reverse().forEach(function(ym){
+      var rec = state.history[ym];
+      var row = document.createElement('div');
+      row.className = 'hist-row';
+      row.innerHTML =
+        '<span class="ym">' + monthLabelText(ym) + '</span>' +
+        '<span><span class="sv ' + (rec.savings<0?'neg':'') + '">' + fmt(rec.savings) + '</span>' +
+        '<span class="rate">' + rec.savingsRate.toFixed(1) + '%</span></span>';
+      hlist.appendChild(row);
+    });
+  }
+
+  // event bindings
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    state.currentMonth = shiftMonth(state.currentMonth, -1);
+    loadMonthInputs();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function(){
+    state.currentMonth = shiftMonth(state.currentMonth, 1);
+    loadMonthInputs();
+  });
+  document.getElementById('prevYear').addEventListener('click', function(){
+    state.currentMonth = shiftMonth(state.currentMonth, -12);
+    loadMonthInputs();
+  });
+  document.getElementById('nextYear').addEventListener('click', function(){
+    state.currentMonth = shiftMonth(state.currentMonth, 12);
+    loadMonthInputs();
+  });
+  document.getElementById('monthJumpInput').addEventListener('change', function(){
+    if (this.value) {
+      state.currentMonth = this.value;
+      loadMonthInputs();
+    }
+  });
+  function flashButton(id, tempText, normalText){
+    var btn = document.getElementById(id);
+    if (!btn) return;
+    btn.textContent = tempText;
+    setTimeout(function(){ btn.textContent = normalText; }, 1000);
+  }
+
+  function askConfirm(message, onConfirm){
+    var modal = document.getElementById('confirmModal');
+    document.getElementById('confirmModalText').textContent = message;
+    modal.style.display = 'flex';
+    var okBtn = document.getElementById('confirmModalOk');
+    var cancelBtn = document.getElementById('confirmModalCancel');
+    function cleanup(){
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+    }
+    function onOk(){ cleanup(); onConfirm(); }
+    function onCancel(){ cleanup(); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  }
+
+  document.getElementById('manualSaveBtn').addEventListener('click', function(){
+    persist();
+    flashButton('manualSaveBtn', '저장됨', '저장');
+  });
+
+  document.getElementById('resetSalaryBtn').addEventListener('click', function(){
+    askConfirm('정말 초기화하시겠습니까?', function(){
+      delete state.history[state.currentMonth];
+      state.startingAsset = 0;
+      persist();
+      renderAll();
+    });
+  });
+  document.getElementById('saveCategoriesBtn').addEventListener('click', function(){
+    persist();
+    flashButton('saveCategoriesBtn', '저장됨', '저장');
+  });
+  document.getElementById('resetCategoriesBtn').addEventListener('click', function(){
+    askConfirm('정말 초기화하시겠습니까?', function(){
+      state.categories = cloneItems(state.categoryDefaults) || defaultCategories();
+      persist();
+      renderAll();
+    });
+  });
+  document.getElementById('setCategoryDefaultBtn').addEventListener('click', function(){
+    askConfirm('현재 지출 항목을 기본값으로 저장할까요? 다음부터 초기화 시 이 값을 불러와요.', function(){
+      state.categoryDefaults = cloneItems(state.categories);
+      persist();
+      renderAll();
+    });
+  });
+  document.getElementById('saveAllocationsBtn').addEventListener('click', function(){
+    persist();
+    flashButton('saveAllocationsBtn', '저장됨', '저장');
+  });
+  document.getElementById('resetAllocationsBtn').addEventListener('click', function(){
+    askConfirm('정말 초기화하시겠습니까?', function(){
+      state.allocations = cloneItems(state.allocationDefaults) || defaultAllocations();
+      persist();
+      renderAll();
+    });
+  });
+  document.getElementById('setAllocationDefaultBtn').addEventListener('click', function(){
+    askConfirm('현재 저축 배분을 기본값으로 저장할까요? 다음부터 초기화 시 이 값을 불러와요.', function(){
+      state.allocationDefaults = cloneItems(state.allocations);
+      persist();
+      renderAll();
+    });
+  });
+  document.getElementById('monthResetBtn').addEventListener('click', function(){
+    askConfirm('정말 이번 달 기록을 초기화하시겠습니까?', function(){
+      delete state.history[state.currentMonth];
+      persist();
+      renderAll();
+    });
+  });
+  document.getElementById('salaryInput').addEventListener('input', recalcHero);
+  document.getElementById('calcSalaryInput').addEventListener('input', renderCalc);
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      var tab = btn.getAttribute('data-tab');
+      document.getElementById('page-overview').style.display = tab === 'overview' ? '' : 'none';
+      document.getElementById('page-trend').style.display = tab === 'trend' ? '' : 'none';
+      document.getElementById('page-stocks').style.display = tab === 'stocks' ? '' : 'none';
+      document.getElementById('page-calc').style.display = tab === 'calc' ? '' : 'none';
+      document.getElementById('page-settings').style.display = tab === 'settings' ? '' : 'none';
+      if (tab === 'trend') renderComboChart();
+      if (tab === 'calc') renderCalc();
+    });
+  });
+  document.querySelectorAll('.period-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.period-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.trendPeriod = btn.getAttribute('data-period');
+      renderComboChart();
+    });
+  });
+  document.getElementById('comboChartCard').addEventListener('click', function(e){
+    var t = e.target;
+    if (t.classList && t.classList.contains('combo-bar-seg')) {
+      var name = t.getAttribute('data-name');
+      var amount = Number(t.getAttribute('data-amount'));
+      var pct = t.getAttribute('data-pct');
+      var label = t.getAttribute('data-label');
+      showTooltip('comboChartCard', e, label + ' · ' + name + ' ' + fmt(amount) + ' (' + pct + '%)');
+    } else if (t.classList && t.classList.contains('pt-hit')) {
+      var l = t.getAttribute('data-label');
+      var v = Number(t.getAttribute('data-value'));
+      var chg = t.getAttribute('data-change');
+      var chgText = chg ? ' (전 시점 대비 ' + (Number(chg) >= 0 ? '+' : '') + chg + '%)' : '';
+      showTooltip('comboChartCard', e, l + ' · 총자산 ' + fmt(v) + chgText);
+    } else {
+      hideTooltip('comboChartCard');
+    }
+  });
+  document.getElementById('assetsPieCard').addEventListener('click', function(e){
+    var t = e.target;
+    if (t.classList && t.classList.contains('pie-slice')) {
+      var name = t.getAttribute('data-name');
+      var amount = Number(t.getAttribute('data-amount'));
+      var pct = t.getAttribute('data-pct');
+      showTooltip('assetsPieCard', e, name + ' · ' + fmt(amount) + ' (' + pct + '%)');
+    } else {
+      hideTooltip('assetsPieCard');
+    }
+  });
+  document.getElementById('startingAssetInput').addEventListener('input', function(){
+    state.startingAsset = Number(this.value) || 0;
+    persist();
+    renderAssets();
+  });
+  document.getElementById('saveBtn').addEventListener('click', saveCurrentMonth);
+  document.getElementById('addCatBtn').addEventListener('click', function(){
+    state.categories.push({id: 'c' + Date.now(), name: '', amount: 0});
+    persist();
+    renderCategories();
+    recalcHero();
+  });
+  document.getElementById('catList').addEventListener('input', function(e){
+    var id = e.target.getAttribute('data-id');
+    var field = e.target.getAttribute('data-field');
+    if (!id) return;
+    var cat = state.categories.find(function(c){return c.id === id;});
+    if (!cat) return;
+    cat[field] = field === 'amount' ? Number(e.target.value) || 0 : e.target.value;
+    persist();
+    if (field === 'amount') { renderBars(); document.getElementById('catTotal').textContent = fmt(catTotal()); recalcHero(); }
+  });
+  document.getElementById('catList').addEventListener('click', function(e){
+    if (e.target.classList.contains('del')) {
+      var id = e.target.getAttribute('data-id');
+      state.categories = state.categories.filter(function(c){return c.id !== id;});
+      persist();
+      renderCategories();
+      recalcHero();
+    }
+  });
+
+  document.getElementById('addAllocBtn').addEventListener('click', function(){
+    state.allocations.push({id: 'a' + Date.now(), name: '', type: 'ratio', value: 0});
+    persist();
+    renderAllocList();
+    recalcHero();
+  });
+  document.getElementById('allocList').addEventListener('input', function(e){
+    var id = e.target.getAttribute('data-id');
+    var field = e.target.getAttribute('data-field');
+    if (!id || !field) return;
+    var item = state.allocations.find(function(a){return a.id === id;});
+    if (!item) return;
+    item[field] = field === 'value' ? Number(e.target.value) || 0 : e.target.value;
+    persist();
+    recalcHero();
+  });
+  document.getElementById('allocList').addEventListener('change', function(e){
+    var id = e.target.getAttribute('data-id');
+    var field = e.target.getAttribute('data-field');
+    if (!id || field !== 'type') return;
+    var item = state.allocations.find(function(a){return a.id === id;});
+    if (!item) return;
+    item.type = e.target.value;
+    persist();
+    recalcHero();
+  });
+  document.getElementById('allocList').addEventListener('click', function(e){
+    if (e.target.classList.contains('del')) {
+      var id = e.target.getAttribute('data-id');
+      state.allocations = state.allocations.filter(function(a){return a.id !== id;});
+      persist();
+      renderAllocList();
+      recalcHero();
+    }
+  });
+
+  document.getElementById('addHoldingBtn').addEventListener('click', function(){
+    state.holdings.push({id: 'h' + Date.now(), name: '', quantity: 0, avgPrice: 0, currentPrice: 0});
+    persist();
+    renderHoldingsList();
+    renderAssets();
+  });
+  document.getElementById('holdingsList').addEventListener('input', function(e){
+    var id = e.target.getAttribute('data-id');
+    var field = e.target.getAttribute('data-field');
+    if (!id || !field) return;
+    var item = state.holdings.find(function(h){ return h.id === id; });
+    if (!item) return;
+    item[field] = field === 'name' ? e.target.value : (Number(e.target.value) || 0);
+    persist();
+    // live-update just this row's result + totals without rebuilding inputs (keeps focus)
+    var rowEl = e.target.closest('.holding-row');
+    var evalEl = rowEl.querySelector('.eval');
+    if (evalEl) evalEl.textContent = fmt(holdingEvalManwon(item));
+    var resultEl = rowEl.querySelector('.holding-result');
+    var pnlEl = rowEl.querySelector('.pnl');
+    var avgPrice = Number(item.avgPrice) || 0;
+    if (avgPrice > 0) {
+      var qty = Number(item.quantity) || 0;
+      var currentPrice = Number(item.currentPrice) || 0;
+      var pnlManwon = (qty * (currentPrice - avgPrice)) / 10000;
+      var pnlPct = (currentPrice/avgPrice - 1) * 100;
+      var cls = pnlManwon >= 0 ? 'positive' : 'negative';
+      var sign = pnlManwon >= 0 ? '+' : '';
+      var text = sign + fmt(pnlManwon) + ' (' + sign + pnlPct.toFixed(1) + '%)';
+      if (!pnlEl) {
+        pnlEl = document.createElement('span');
+        resultEl.appendChild(pnlEl);
+      }
+      pnlEl.className = 'pnl ' + cls;
+      pnlEl.textContent = text;
+    } else if (pnlEl) {
+      pnlEl.remove();
+    }
+    renderHoldingsSummary();
+    renderAssets();
+  });
+  document.getElementById('holdingsList').addEventListener('click', function(e){
+    if (e.target.classList.contains('del')) {
+      var id = e.target.getAttribute('data-id');
+      state.holdings = state.holdings.filter(function(h){ return h.id !== id; });
+      persist();
+      renderHoldingsList();
+      renderAssets();
+    } else if (e.target.classList.contains('sell-btn')) {
+      openSellModal(e.target.getAttribute('data-id'));
+    }
+  });
+
+  var sellTargetId = null;
+
+  function openSellModal(holdingId){
+    var h = state.holdings.find(function(x){ return x.id === holdingId; });
+    if (!h) return;
+    sellTargetId = holdingId;
+    document.getElementById('sellModalTitle').textContent = (h.name || '이름없는 종목') + ' 매도';
+    document.getElementById('sellQtyInput').value = h.quantity;
+    document.getElementById('sellPriceInput').value = h.currentPrice || h.avgPrice || '';
+    document.getElementById('sellModal').style.display = 'flex';
+  }
+
+  document.getElementById('sellModalCancel').addEventListener('click', function(){
+    document.getElementById('sellModal').style.display = 'none';
+    sellTargetId = null;
+  });
+  document.getElementById('sellModalOk').addEventListener('click', function(){
+    var h = state.holdings.find(function(x){ return x.id === sellTargetId; });
+    document.getElementById('sellModal').style.display = 'none';
+    if (!h) { sellTargetId = null; return; }
+    var maxQty = Number(h.quantity) || 0;
+    var qtySold = Number(document.getElementById('sellQtyInput').value) || 0;
+    qtySold = Math.min(Math.max(qtySold, 0), maxQty);
+    var sellPrice = Number(document.getElementById('sellPriceInput').value) || 0;
+    var avgPrice = Number(h.avgPrice) || 0;
+    if (qtySold > 0) {
+      var gain = avgPrice > 0 ? (qtySold * (sellPrice - avgPrice)) / 10000 : 0;
+      state.realizedPnl = (Number(state.realizedPnl) || 0) + gain;
+      h.quantity = maxQty - qtySold;
+      if (h.quantity <= 0.0001) {
+        state.holdings = state.holdings.filter(function(x){ return x.id !== h.id; });
+      }
+      state.sellHistory.push({
+        id: 's' + Date.now(),
+        holdingId: h.id,
+        holdingName: h.name,
+        quantity: qtySold,
+        sellPrice: sellPrice,
+        avgPriceAtSale: avgPrice,
+        gain: gain,
+        date: new Date().toISOString().slice(0,10)
+      });
+      persist();
+      renderHoldingsList();
+      renderSellHistory();
+      renderAssets();
+    }
+    sellTargetId = null;
+  });
+
+  document.getElementById('resetHoldingsBtn').addEventListener('click', function(){
+    askConfirm('정말 초기화하시겠습니까? 보유 종목, 매도 내역, 누적 실현손익이 모두 삭제돼요.', function(){
+      state.holdings = [];
+      state.realizedPnl = 0;
+      state.sellHistory = [];
+      persist();
+      renderHoldingsList();
+      renderSellHistory();
+      renderAssets();
+    });
+  });
+
+  var sellDetailTargetId = null;
+
+  function openSellDetail(id){
+    var record = state.sellHistory.find(function(r){ return r.id === id; });
+    if (!record) return;
+    sellDetailTargetId = id;
+    document.getElementById('sellDetailTitle').textContent =
+      formatSellDate(record.date) + ' · ' + (record.holdingName || '이름없는 종목') + ' 매도 내역';
+    document.getElementById('sellDetailQtyInput').value = record.quantity;
+    document.getElementById('sellDetailPriceInput').value = record.sellPrice;
+    document.getElementById('sellDetailModal').style.display = 'flex';
+  }
+
+  document.getElementById('sellHistoryList').addEventListener('click', function(e){
+    var row = e.target.closest ? e.target.closest('.sh-summary-row') : null;
+    if (row) openSellDetail(row.getAttribute('data-id'));
+  });
+
+  document.getElementById('sellDetailCancelBtn').addEventListener('click', function(){
+    document.getElementById('sellDetailModal').style.display = 'none';
+    sellDetailTargetId = null;
+  });
+
+  document.getElementById('sellDetailSaveBtn').addEventListener('click', function(){
+    var record = state.sellHistory.find(function(r){ return r.id === sellDetailTargetId; });
+    document.getElementById('sellDetailModal').style.display = 'none';
+    if (!record) { sellDetailTargetId = null; return; }
+    reverseSellRecord(record);
+    record.quantity = Number(document.getElementById('sellDetailQtyInput').value) || 0;
+    record.sellPrice = Number(document.getElementById('sellDetailPriceInput').value) || 0;
+    applySellRecordEffect(record);
+    persist();
+    renderHoldingsList();
+    renderSellHistory();
+    renderAssets();
+    sellDetailTargetId = null;
+  });
+
+  document.getElementById('sellDetailDeleteBtn').addEventListener('click', function(){
+    var id = sellDetailTargetId;
+    var record = state.sellHistory.find(function(r){ return r.id === id; });
+    document.getElementById('sellDetailModal').style.display = 'none';
+    if (!record) { sellDetailTargetId = null; return; }
+    askConfirm('이 매도 내역을 삭제할까요? 보유 수량과 손익이 되돌아가요.', function(){
+      reverseSellRecord(record);
+      state.sellHistory = state.sellHistory.filter(function(r){ return r.id !== id; });
+      persist();
+      renderHoldingsList();
+      renderSellHistory();
+      renderAssets();
+    });
+    sellDetailTargetId = null;
+  });
+
+  load();
+  renderAll();
+})();
+</script>
+</body>
+</html>
