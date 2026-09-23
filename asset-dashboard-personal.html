@@ -1041,10 +1041,7 @@
     <div class="card">
       <div class="card-header-row">
         <h2>급여 입력</h2>
-        <div class="card-actions">
-          <button class="mini-reset-btn" id="resetSalaryBtn">초기화</button>
-          <button class="mini-save-btn" id="saveBtn">저장</button>
-        </div>
+        <button class="mini-reset-btn" id="resetSalaryBtn">초기화</button>
       </div>
       <div class="salary-input-row">
         <input type="number" id="salaryInput" placeholder="0" inputmode="decimal" step="0.1">
@@ -1059,10 +1056,7 @@
     <div class="card">
       <div class="card-header-row">
         <h2>지출 항목 설정</h2>
-        <div class="card-actions">
-          <button class="mini-reset-btn" id="resetCategoriesBtn">초기화</button>
-          <button class="mini-save-btn" id="saveCategoriesBtn">저장</button>
-        </div>
+        <button class="mini-reset-btn" id="resetCategoriesBtn">초기화</button>
       </div>
       <div class="default-row">
         <span class="default-hint" id="categoryDefaultHint">기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요</span>
@@ -1080,10 +1074,7 @@
     <div class="card">
       <div class="card-header-row">
         <h2>저축 배분 설정</h2>
-        <div class="card-actions">
-          <button class="mini-reset-btn" id="resetAllocationsBtn">초기화</button>
-          <button class="mini-save-btn" id="saveAllocationsBtn">저장</button>
-        </div>
+        <button class="mini-reset-btn" id="resetAllocationsBtn">초기화</button>
       </div>
       <div class="default-row">
         <span class="default-hint" id="allocationDefaultHint">기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요</span>
@@ -2068,7 +2059,7 @@
   }
 
   document.getElementById('manualSaveBtn').addEventListener('click', function(){
-    persist();
+    saveCurrentMonth();
     flashButton('manualSaveBtn', '저장됨', '저장');
   });
 
@@ -2079,10 +2070,6 @@
       persist();
       renderAll();
     });
-  });
-  document.getElementById('saveCategoriesBtn').addEventListener('click', function(){
-    persist();
-    flashButton('saveCategoriesBtn', '저장됨', '저장');
   });
   document.getElementById('resetCategoriesBtn').addEventListener('click', function(){
     askConfirm('정말 초기화하시겠습니까?', function(){
@@ -2097,10 +2084,6 @@
       persist();
       renderAll();
     });
-  });
-  document.getElementById('saveAllocationsBtn').addEventListener('click', function(){
-    persist();
-    flashButton('saveAllocationsBtn', '저장됨', '저장');
   });
   document.getElementById('resetAllocationsBtn').addEventListener('click', function(){
     askConfirm('정말 초기화하시겠습니까?', function(){
@@ -2181,7 +2164,6 @@
     persist();
     renderAssets();
   });
-  document.getElementById('saveBtn').addEventListener('click', saveCurrentMonth);
   document.getElementById('addCatBtn').addEventListener('click', function(){
     state.categories.push({id: 'c' + Date.now(), name: '', amount: 0});
     persist();
