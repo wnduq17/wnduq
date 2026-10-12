@@ -62,6 +62,31 @@
     margin: 0;
     letter-spacing: -0.01em;
   }
+  .sync-row {
+    margin: -14px 0 18px;
+  }
+  .month-status {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+  .month-status.saved { color: var(--text-faint); }
+  .month-status.draft { color: var(--amber); font-weight: 600; }
+  .sync-badge {
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .sync-badge.active::before {
+    content: '●';
+    color: var(--mint);
+    margin-right: 5px;
+    font-size: 8px;
+  }
+  .sync-badge.syncing::before {
+    content: '●';
+    color: var(--amber);
+    margin-right: 5px;
+    font-size: 8px;
+  }
   .month-picker {
     display: flex;
     align-items: center;
@@ -616,6 +641,31 @@
     border-color: transparent;
   }
 
+  .backup-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(198,130,10,0.1);
+    border: 1px solid rgba(198,130,10,0.3);
+    border-radius: var(--radius-md);
+    padding: 11px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .backup-banner button {
+    flex-shrink: 0;
+    background: var(--amber);
+    border: none;
+    color: #1A1D24;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 100px;
+    cursor: pointer;
+  }
+
   .flow-header {
     display: flex;
     justify-content: space-between;
@@ -893,6 +943,7 @@
       <button id="nextYear" title="다음 해">»</button>
     </div>
   </header>
+  <div class="sync-row"><span class="sync-badge" id="syncStatus"></span><div class="month-status" id="monthStatus"></div></div>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="overview">개요</button>
@@ -903,9 +954,14 @@
   </div>
 
   <div id="page-overview">
+    <div class="backup-banner" id="backupReminderBanner" style="display:none;">
+      <span id="backupReminderText"></span>
+      <button id="backupReminderBtn" type="button">지금 백업</button>
+    </div>
+
     <div class="hero">
       <div class="glow"></div>
-      <p class="hero-label">이번 달 저축액</p>
+      <p class="hero-label" id="heroLabel">이번 달 저축액</p>
       <p class="hero-amount" id="savingsAmount">0만원</p>
       <div class="hero-sub">
         <div class="item">
@@ -936,7 +992,7 @@
       <h2>자산 현황</h2>
       <div class="assets-total">
         <div>
-          <div class="label">현재 총자산 (초기자산 + 누적 저축 + 보유 종목 평가금액)</div>
+          <div class="label">현재 총자산 (초기자산 + 누적 저축 + 투자 손익)</div>
           <div class="amount" id="totalAssets">0만원</div>
         </div>
       </div>
@@ -1017,7 +1073,7 @@
         <span>만원</span>
       </div>
       <div class="calc-summary-row">
-        <span>지출 (설정 탭 기준)</span>
+        <span>지출 (설정 탭 · 보고 있는 달 기준)</span>
         <span class="v" id="calcExpenseDisplay">0만원</span>
       </div>
       <div class="calc-summary-row highlight">
@@ -1039,9 +1095,23 @@
     </div>
 
     <div class="card">
+      <h2>백업</h2>
+      <div class="default-hint" id="lastBackupInfo" style="margin-bottom:14px;">기기에 저장이 잘 안 되거나 불안하면, 파일로 내보내뒀다가 나중에 가져오기로 복원할 수 있어요.</div>
+      <div class="card-actions" style="justify-content:flex-start;">
+        <button class="mini-save-btn" id="exportBtn">내보내기</button>
+        <button class="mini-reset-btn" id="importBtn">가져오기</button>
+        <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+      </div>
+      <div class="default-hint" id="backupStatus" style="margin-top:10px; margin-bottom:0;"></div>
+    </div>
+
+    <div class="card">
       <div class="card-header-row">
         <h2>급여 입력</h2>
-        <button class="mini-reset-btn" id="resetSalaryBtn">초기화</button>
+        <div class="card-actions">
+          <button class="mini-reset-btn" id="resetSalaryBtn">초기화</button>
+          <button class="mini-save-btn" id="saveBtn">저장</button>
+        </div>
       </div>
       <div class="salary-input-row">
         <input type="number" id="salaryInput" placeholder="0" inputmode="decimal" step="0.1">
@@ -1056,7 +1126,10 @@
     <div class="card">
       <div class="card-header-row">
         <h2>지출 항목 설정</h2>
-        <button class="mini-reset-btn" id="resetCategoriesBtn">초기화</button>
+        <div class="card-actions">
+          <button class="mini-reset-btn" id="resetCategoriesBtn">초기화</button>
+          <button class="mini-save-btn" id="saveCategoriesBtn">저장</button>
+        </div>
       </div>
       <div class="default-row">
         <span class="default-hint" id="categoryDefaultHint">기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요</span>
@@ -1074,7 +1147,10 @@
     <div class="card">
       <div class="card-header-row">
         <h2>저축 배분 설정</h2>
-        <button class="mini-reset-btn" id="resetAllocationsBtn">초기화</button>
+        <div class="card-actions">
+          <button class="mini-reset-btn" id="resetAllocationsBtn">초기화</button>
+          <button class="mini-save-btn" id="saveAllocationsBtn">저장</button>
+        </div>
       </div>
       <div class="default-row">
         <span class="default-hint" id="allocationDefaultHint">기본값 미설정 — 초기화하면 앱 기본값으로 돌아가요</span>
@@ -1096,7 +1172,7 @@
     </div>
   </div>
 
-  <footer class="note">기기 간 동기화가 켜지면 계정 기준으로 저장되고, 꺼져 있으면 이 브라우저에만 저장돼요</footer>
+  <footer class="note" id="storageNote">데이터는 이 기기에만 저장돼요</footer>
 
   <div class="modal-overlay" id="confirmModal" style="display:none;">
     <div class="modal-box">
@@ -1141,6 +1217,9 @@
 <script>
 (function(){
   var STORE_KEY = 'assetDashboard_v1';
+  var SCHEMA_VERSION = 2;
+  var SHORTFALL = '적자·부족분';
+  var INVEST = '투자 손익';
 
   function defaultCategories(){
     return [
@@ -1162,45 +1241,301 @@
     if (!arr || !arr.length) return null;
     return arr.map(function(x){ return Object.assign({}, x); });
   }
+  function cloneList(arr){
+    return (arr || []).map(function(x){ return Object.assign({}, x); });
+  }
+  function newId(prefix){
+    return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+  function ensureIds(list, prefix){
+    (list || []).forEach(function(x){ if (!x.id) x.id = newId(prefix); });
+    return list;
+  }
+  function pad2(n){ return String(n).padStart(2, '0'); }
+  function todayLocal(){
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+  }
+  function thisMonth(){
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth()+1);
+  }
 
+  // 화면에서 편집 중인 지출·배분은 "지금 보고 있는 달"의 값이에요.
+  // 저장된 달: history[ym] / 아직 저장 안 한 달의 입력: drafts[ym]
   var state = {
     categories: defaultCategories(),
+    allocations: defaultAllocations(),
     startingAsset: 0,
     currentMonth: null, // 'YYYY-MM'
-    salaryDraft: 0,
     trendPeriod: 'month',
-    history: {}, // { 'YYYY-MM': {salary, expenseTotal, savings, savingsRate, categories:[...]} }
-    allocations: defaultAllocations(),
+    history: {}, // { 'YYYY-MM': {salary, expenseTotal, savings, savingsRate, categories, allocations, allocationBreakdown} }
+    drafts: {},  // { 'YYYY-MM': {salary, categories, allocations} }
     categoryDefaults: null,
     allocationDefaults: null,
     holdings: [],
     realizedPnl: 0,
-    sellHistory: []
+    sellHistory: [],
+    lastBackupAt: null,
+    schemaVersion: SCHEMA_VERSION
   };
+
+  var cloudDocRef = null;
+  var cloudUnsub = null;
+  var cloudWriteTimer = null;
+  var cloudReady = false;
+  var cloudSyncing = false;
+  var lastSyncedJSON = null;
+  var localUpdatedAt = 0;
+  var pendingCloudJSON = null;
 
   function stateSnapshot(){
     return {
-      categories: state.categories,
+      schemaVersion: state.schemaVersion,
       startingAsset: state.startingAsset,
       history: state.history,
-      allocations: state.allocations,
+      drafts: state.drafts,
       categoryDefaults: state.categoryDefaults,
       allocationDefaults: state.allocationDefaults,
       holdings: state.holdings,
       realizedPnl: state.realizedPnl,
-      sellHistory: state.sellHistory
+      sellHistory: state.sellHistory,
+      lastBackupAt: state.lastBackupAt,
+      updatedAt: localUpdatedAt
     };
   }
 
-  function renderAll(){
-    renderCategories();
-    renderAllocList();
-    loadMonthInputs();
+  function updateSyncBadge(){
+    var el = document.getElementById('syncStatus');
+    var footer = document.getElementById('storageNote');
+    if (footer) {
+      footer.textContent = cloudReady
+        ? '기기 간 동기화가 켜져 있어서 계정 기준으로 저장돼요'
+        : '데이터는 이 기기에만 저장돼요 · 홈 화면 아이콘을 지우면 데이터도 지워질 수 있으니 백업을 꼭 해두세요';
+    }
+    if (!el) return;
+    if (!cloudReady) { el.textContent = ''; el.className = 'sync-badge'; return; }
+    el.className = 'sync-badge ' + (cloudSyncing ? 'syncing' : 'active');
+    el.textContent = cloudSyncing ? '동기화 중' : '기기 간 동기화 켜짐';
+  }
+
+  function saveLocalOnly(){
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(stateSnapshot()));
+    } catch(e) { console.error('save failed', e); }
+  }
+
+  function scheduleCloudWrite(json){
+    if (!cloudDocRef) { pendingCloudJSON = json; return; }
+    clearTimeout(cloudWriteTimer);
+    cloudWriteTimer = setTimeout(function(){
+      cloudSyncing = true;
+      updateSyncBadge();
+      cloudDocRef.set(JSON.parse(json))
+        .catch(function(e){ console.error('cloud write failed', e); })
+        .then(function(){ cloudSyncing = false; updateSyncBadge(); });
+    }, 800);
+  }
+
+  // ---------- 저축 배분 계산 ----------
+  function computeAllocations(savings){
+    var allocs = state.allocations;
+    var fixedItems = allocs.filter(function(a){ return a.type === 'fixed'; });
+    var ratioItems = allocs.filter(function(a){ return a.type === 'ratio'; });
+    var fixedTotal = fixedItems.reduce(function(s,a){ return s + (Number(a.value)||0); }, 0);
+    var remaining = savings - fixedTotal;
+    var ratioBase = Math.max(remaining, 0); // 고정 배분 후 남는 돈이 없으면 비율 항목은 0
+    var ratioWeightSum = ratioItems.reduce(function(s,a){ return s + (Number(a.value)||0); }, 0);
+    var amounts = {};
+    allocs.forEach(function(a){
+      if (a.type === 'fixed') {
+        amounts[a.id] = Number(a.value) || 0;
+      } else {
+        var w = Number(a.value) || 0;
+        amounts[a.id] = ratioWeightSum > 0 ? ratioBase * (w / ratioWeightSum) : 0;
+      }
+    });
+    return {fixedTotal: fixedTotal, remaining: remaining, ratioWeightSum: ratioWeightSum, amounts: amounts};
+  }
+
+  // 월 기록에 남기는 배분 내역. 합계가 항상 그 달 저축액과 같아지도록
+  // 남는 돈은 '미배분', 모자란 돈은 '적자·부족분'(음수)으로 넣어요.
+  function buildBreakdown(savings){
+    var calc = computeAllocations(savings);
+    var items = state.allocations
+      .map(function(a){ return {name: a.name || '이름없음', amount: calc.amounts[a.id] || 0}; })
+      .filter(function(x){ return x.amount > 0.001; });
+    var sum = items.reduce(function(s,x){ return s + x.amount; }, 0);
+    var diff = savings - sum;
+    if (diff > 0.05) items.push({name: '미배분', amount: diff});
+    else if (diff < -0.05) items.push({name: SHORTFALL, amount: diff});
+    return items;
+  }
+
+  // ---------- 예전 데이터 변환 (v1 → v2) ----------
+  var migratedThisLoad = false;
+  function migrate(legacyCategories, legacyAllocations){
+    migratedThisLoad = true;
+    var gc = ensureIds(cloneList(legacyCategories || defaultCategories()), 'c');
+    var ga = ensureIds(cloneList(legacyAllocations || defaultAllocations()), 'a');
+    Object.keys(state.history).forEach(function(ym){
+      var rec = state.history[ym];
+      rec.categories = ensureIds(cloneList(rec.categories), 'c');
+      if (!rec.allocations) rec.allocations = cloneList(ga);
+      var bd = rec.allocationBreakdown ? cloneList(rec.allocationBreakdown)
+        : ((Number(rec.savings) || 0) > 0 ? [{name: '저축', amount: Number(rec.savings)}] : []);
+      var sum = bd.reduce(function(s,x){ return s + (Number(x.amount)||0); }, 0);
+      var diff = (Number(rec.savings) || 0) - sum;
+      if (diff > 0.05) bd.push({name: '미배분', amount: diff});
+      else if (diff < -0.05) bd.push({name: SHORTFALL, amount: diff});
+      rec.allocationBreakdown = bd;
+    });
+    // 예전 버전에서 고쳐두고 저장 안 한 설정은 이번 달 입력으로 옮겨둬요
+    var cm = thisMonth();
+    if (!state.history[cm] && !state.drafts[cm]) {
+      state.drafts[cm] = {salary: null, categories: gc, allocations: ga};
+    }
+    state.schemaVersion = SCHEMA_VERSION;
+  }
+
+  function applyData(data){
+    if (!data) return;
+    state.startingAsset = Number(data.startingAsset) || 0;
+    state.history = data.history || {};
+    state.drafts = data.drafts || {};
+    state.categoryDefaults = data.categoryDefaults || null;
+    state.allocationDefaults = data.allocationDefaults || null;
+    state.holdings = data.holdings || [];
+    state.realizedPnl = Number(data.realizedPnl) || 0;
+    state.sellHistory = data.sellHistory || [];
+    state.lastBackupAt = Number(data.lastBackupAt) || null;
+    state.schemaVersion = Number(data.schemaVersion) || 1;
+    if (state.schemaVersion < SCHEMA_VERSION) migrate(data.categories, data.allocations);
+  }
+
+  // ---------- 달별 설정 ----------
+  function templateFor(ym){
+    var candidates = Object.keys(state.history).concat(Object.keys(state.drafts))
+      .filter(function(m){ return m < ym; })
+      .sort();
+    var prevYm = candidates.length ? candidates[candidates.length-1] : null;
+    var prev = prevYm ? (state.history[prevYm] || state.drafts[prevYm]) : null;
+    return {
+      salary: null,
+      categories: prev ? cloneList(prev.categories) : (cloneItems(state.categoryDefaults) || defaultCategories()),
+      allocations: prev ? cloneList(prev.allocations) : (cloneItems(state.allocationDefaults) || defaultAllocations()),
+      saved: false
+    };
+  }
+
+  function monthConfig(ym){
+    var rec = state.history[ym];
+    if (rec) return {salary: rec.salary, categories: rec.categories || [], allocations: rec.allocations || [], saved: true};
+    var d = state.drafts[ym];
+    if (d) return {salary: d.salary, categories: d.categories || [], allocations: d.allocations || [], saved: false};
+    return templateFor(ym);
+  }
+
+  function salaryValue(){
+    var v = document.getElementById('salaryInput').value;
+    if (v === '' || v === null) return null;
+    return Number(v) || 0;
+  }
+
+  function buildRecord(){
+    var salary = salaryValue() || 0;
+    var expense = catTotal();
+    var savings = salary - expense;
+    return {
+      salary: salary,
+      expenseTotal: expense,
+      savings: savings,
+      savingsRate: salary > 0 ? (savings/salary*100) : 0,
+      categories: cloneList(state.categories),
+      allocations: cloneList(state.allocations),
+      allocationBreakdown: buildBreakdown(savings)
+    };
+  }
+
+  // 지금 보고 있는 달에 편집 내용을 반영해요.
+  // 저장된 달이면 기록을 바로 다시 계산하고, 아니면 입력만 보관해요.
+  function commitMonth(){
+    var ym = state.currentMonth;
+    if (state.history[ym]) {
+      state.history[ym] = buildRecord();
+    } else {
+      state.drafts[ym] = {
+        salary: salaryValue(),
+        categories: cloneList(state.categories),
+        allocations: cloneList(state.allocations)
+      };
+    }
+    persist();
+  }
+
+  function afterEdit(){
+    commitMonth();
+    recalcHero();
     renderAssets();
     renderCalc();
+  }
+
+  function renderMonthStatus(){
+    var ym = state.currentMonth;
+    var label = monthLabelText(ym);
+    var saved = !!state.history[ym];
+    var el = document.getElementById('monthStatus');
+    if (el) {
+      el.className = 'month-status ' + (saved ? 'saved' : 'draft');
+      el.textContent = saved
+        ? label + ' 기록 저장됨 · 설정을 고치면 이 달 기록에 바로 반영돼요'
+        : label + ' 아직 저장 안 됨 · 설정 탭 \'급여 입력\'에서 저장해야 자산에 반영돼요';
+    }
+    var heroLabel = document.getElementById('heroLabel');
+    if (heroLabel) heroLabel.textContent = label + ' 저축액';
+    var resetBtn = document.getElementById('monthResetBtn');
+    if (resetBtn) resetBtn.textContent = label + ' 초기화';
+  }
+
+  function renderAll(){
+    loadMonthInputs();
+    renderAssets();
     renderDefaultHints();
     renderHoldingsList();
     renderSellHistory();
+    renderBackupReminder();
+    updateSyncBadge();
+  }
+
+  function renderBackupReminder(){
+    var banner = document.getElementById('backupReminderBanner');
+    var text = document.getElementById('backupReminderText');
+    var infoEl = document.getElementById('lastBackupInfo');
+    if (!banner) return;
+
+    var hasData = Object.keys(state.history).length > 0 || state.holdings.length > 0 || state.sellHistory.length > 0;
+    var last = state.lastBackupAt;
+    var daysSince = last ? Math.floor((Date.now() - last) / 86400000) : null;
+
+    if (infoEl) {
+      if (last) {
+        infoEl.textContent = daysSince === 0 ? '마지막 백업: 오늘' : '마지막 백업: ' + daysSince + '일 전';
+      } else {
+        infoEl.textContent = '아직 백업한 적이 없어요. 파일로 내보내뒀다가 나중에 가져오기로 복원할 수 있어요.';
+      }
+    }
+
+    if (!hasData) { banner.style.display = 'none'; return; }
+
+    if (last === null) {
+      text.textContent = '아직 백업한 적이 없어요';
+      banner.style.display = 'flex';
+    } else if (daysSince >= 7) {
+      text.textContent = '마지막 백업 후 ' + daysSince + '일 지났어요';
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
   }
 
   function renderDefaultHints(){
@@ -1218,31 +1553,69 @@
     }
   }
 
+  function initCloud(){
+    if (!window.claude || !window.claude.use) return;
+    window.claude.use('db').then(function(dbCap){
+      if (!dbCap) return null;
+      return window.claude.use('user').then(function(userCap){
+        if (!userCap) return null;
+        return userCap.id().then(function(uid){
+          if (!uid) return null;
+          cloudDocRef = dbCap.doc('data/users/' + uid + '/state');
+          cloudReady = true;
+          updateSyncBadge();
+          if (pendingCloudJSON) {
+            var toFlush = pendingCloudJSON;
+            pendingCloudJSON = null;
+            scheduleCloudWrite(toFlush);
+          }
+          cloudUnsub = cloudDocRef.onSnapshot(function(snap){
+            if (!snap.exists) {
+              persist();
+              return;
+            }
+            if (snap.metadata.hasPendingWrites) return;
+            var data = snap.data();
+            var incomingUpdatedAt = Number(data.updatedAt) || 0;
+            if (incomingUpdatedAt <= localUpdatedAt) return;
+            localUpdatedAt = incomingUpdatedAt;
+            lastSyncedJSON = JSON.stringify(data);
+            applyData(data);
+            saveLocalOnly();
+            renderAll();
+          }, function(err){
+            console.error('cloud subscribe error', err);
+            cloudReady = false;
+            updateSyncBadge();
+          });
+        });
+      });
+    }).catch(function(e){ console.error('cloud init failed', e); });
+  }
+
   function load(){
+    var loaded = false;
     try {
       var raw = localStorage.getItem(STORE_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        state.categories = parsed.categories || state.categories;
-        state.startingAsset = parsed.startingAsset || 0;
-        state.history = parsed.history || {};
-        state.allocations = parsed.allocations || state.allocations;
-        state.categoryDefaults = parsed.categoryDefaults || null;
-        state.allocationDefaults = parsed.allocationDefaults || null;
-        state.holdings = parsed.holdings || [];
-        state.realizedPnl = Number(parsed.realizedPnl) || 0;
-        state.sellHistory = parsed.sellHistory || [];
+        applyData(parsed);
+        localUpdatedAt = Number(parsed.updatedAt) || 0;
+        loaded = true;
       }
     } catch(e) { console.error('load failed', e); }
-    var now = new Date();
-    state.currentMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    if (!loaded) migrate(null, null);
+    state.currentMonth = thisMonth();
   }
 
   function persist(){
+    localUpdatedAt = Date.now();
     var json = JSON.stringify(stateSnapshot());
     try {
       localStorage.setItem(STORE_KEY, json);
     } catch(e) { console.error('save failed', e); }
+    lastSyncedJSON = json;
+    scheduleCloudWrite(json);
   }
 
   function fmt(n){
@@ -1257,11 +1630,7 @@
   }
 
   function currentSalary(){
-    var rec = state.history[state.currentMonth];
-    if (document.activeElement !== document.getElementById('salaryInput')) {
-      // reflect stored record if exists, else draft
-    }
-    return Number(document.getElementById('salaryInput').value) || 0;
+    return salaryValue() || 0;
   }
 
   function monthLabelText(ym){
@@ -1272,7 +1641,7 @@
   function shiftMonth(ym, delta){
     var parts = ym.split('-').map(Number);
     var d = new Date(parts[0], parts[1]-1+delta, 1);
-    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    return d.getFullYear() + '-' + pad2(d.getMonth()+1);
   }
 
   function renderCategories(){
@@ -1282,9 +1651,9 @@
       var row = document.createElement('div');
       row.className = 'cat-row';
       row.innerHTML =
-        '<input type="text" value="' + escapeHtml(c.name) + '" data-id="' + c.id + '" data-field="name">' +
-        '<input type="number" value="' + c.amount + '" data-id="' + c.id + '" data-field="amount" inputmode="decimal" step="0.1">' +
-        '<button class="del" data-id="' + c.id + '">×</button>';
+        '<input type="text" value="' + escapeHtml(c.name) + '" data-id="' + escapeHtml(c.id) + '" data-field="name">' +
+        '<input type="number" value="' + (Number(c.amount) || 0) + '" data-id="' + escapeHtml(c.id) + '" data-field="amount" inputmode="decimal" step="0.1">' +
+        '<button class="del" data-id="' + escapeHtml(c.id) + '">×</button>';
       list.appendChild(row);
     });
     document.getElementById('catTotal').textContent = fmt(catTotal());
@@ -1292,9 +1661,12 @@
   }
 
   function escapeHtml(s){
-    var div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   var barColors = ['#2F8FFF', '#7566DD', '#C6820A', '#DD4B43', '#3FAE6E', '#D0629C'];
@@ -1309,7 +1681,7 @@
     holder.innerHTML = '';
     state.categories.forEach(function(c, i){
       var amt = Number(c.amount) || 0;
-      var pct = total > 0 ? (amt/total*100) : 0;
+      var pct = total > 0 ? Math.max(amt/total*100, 0) : 0;
       var row = document.createElement('div');
       row.className = 'bar-row';
       row.innerHTML =
@@ -1323,17 +1695,14 @@
   function recalcHero(){
     var salary = currentSalary();
     var expense = catTotal();
-    var rawSavings = salary - expense;
-    var savings = rawSavings;
-    if (rawSavings > 0) {
-      var calc = computeAllocations(rawSavings);
-      savings = state.allocations.reduce(function(s,a){ return s + (calc.amounts[a.id] || 0); }, 0);
-    }
+    var savings = salary - expense; // 실제 저축액 = 급여 - 지출 (월 기록과 같은 숫자)
     var rate = salary > 0 ? (savings/salary*100) : 0;
 
     var amtEl = document.getElementById('savingsAmount');
-    amtEl.textContent = fmt(savings);
-    amtEl.className = 'hero-amount ' + (savings < 0 ? 'negative' : 'positive');
+    var noSalary = salaryValue() === null;
+    amtEl.textContent = noSalary ? '급여 입력 전' : fmt(savings);
+    amtEl.className = 'hero-amount ' + (!noSalary && savings < 0 ? 'negative' : 'positive');
+    amtEl.style.fontSize = noSalary ? '26px' : '';
 
     var pill = document.getElementById('ratePill');
     pill.textContent = rate.toFixed(1) + '%';
@@ -1343,8 +1712,8 @@
     document.getElementById('salaryDisplay').textContent = fmt(salary);
     document.getElementById('expenseDisplay').textContent = fmt(expense);
 
-    renderFlowChart(salary, expense, rawSavings);
-    renderAllocations(rawSavings);
+    renderFlowChart(salary, expense, savings);
+    renderAllocations(savings);
   }
 
   var expenseColors = ['#DD4B43', '#E0834F', '#C6820A', '#D0629C', '#E8988F'];
@@ -1378,14 +1747,14 @@
 
     if (isDeficit) {
       track.innerHTML = '<div class="flow-seg" style="width:100%; background:#DD4B43;"></div>';
-      var lh = '';
+      var dl = '';
       state.categories.forEach(function(c, i){
         var amt = Number(c.amount) || 0;
         if (amt <= 0) return;
-        lh += legendRow(c.name, amt, expense > 0 ? amt/expense*100 : 0, expenseColors[i % expenseColors.length]);
+        dl += legendRow(c.name, amt, expense > 0 ? amt/expense*100 : 0, expenseColors[i % expenseColors.length]);
       });
-      lh += '<div class="deficit-note">지출이 급여를 ' + fmt(expense - salary) + ' 초과했어요</div>';
-      legend.innerHTML = lh;
+      dl += '<div class="deficit-note">지출이 급여를 ' + fmt(expense - salary) + ' 초과했어요</div>';
+      legend.innerHTML = dl;
       return;
     }
 
@@ -1415,9 +1784,11 @@
 
     var remain = savings - allocSum;
     if (remain > 0.05) {
-      var pct = remain/salary*100;
-      savSegs += '<div class="flow-seg" style="width:' + pct + '%; background:#C7CCD3;"></div>';
-      lh += legendRow('미배분', remain, pct, '#C7CCD3');
+      var rpct = remain/salary*100;
+      savSegs += '<div class="flow-seg" style="width:' + rpct + '%; background:#C7CCD3;"></div>';
+      lh += legendRow('미배분', remain, rpct, '#C7CCD3');
+    } else if (remain < -0.05) {
+      lh += '<div class="deficit-note">고정 배분이 저축액보다 ' + fmt(-remain) + ' 많아요 (모자란 만큼은 \'' + SHORTFALL + '\'로 기록돼요)</div>';
     }
 
     var segs = expSegs;
@@ -1434,34 +1805,17 @@
     state.allocations.forEach(function(a){
       var row = document.createElement('div');
       row.className = 'alloc-row';
+      var id = escapeHtml(a.id);
       row.innerHTML =
-        '<input type="text" value="' + escapeHtml(a.name) + '" data-id="' + a.id + '" data-field="name">' +
-        '<input type="number" value="' + a.value + '" data-id="' + a.id + '" data-field="value" inputmode="decimal" step="0.1">' +
-        '<select data-id="' + a.id + '" data-field="type">' +
+        '<input type="text" value="' + escapeHtml(a.name) + '" data-id="' + id + '" data-field="name">' +
+        '<input type="number" value="' + (Number(a.value) || 0) + '" data-id="' + id + '" data-field="value" inputmode="decimal" step="0.1">' +
+        '<select data-id="' + id + '" data-field="type">' +
           '<option value="fixed"' + (a.type==='fixed'?' selected':'') + '>만원(고정)</option>' +
           '<option value="ratio"' + (a.type==='ratio'?' selected':'') + '>비율</option>' +
         '</select>' +
-        '<button class="del" data-id="' + a.id + '">×</button>';
+        '<button class="del" data-id="' + id + '">×</button>';
       list.appendChild(row);
     });
-  }
-
-  function computeAllocations(savings){
-    var fixedItems = state.allocations.filter(function(a){ return a.type === 'fixed'; });
-    var ratioItems = state.allocations.filter(function(a){ return a.type === 'ratio'; });
-    var fixedTotal = fixedItems.reduce(function(s,a){ return s + (Number(a.value)||0); }, 0);
-    var remaining = savings - fixedTotal;
-    var ratioWeightSum = ratioItems.reduce(function(s,a){ return s + (Number(a.value)||0); }, 0);
-    var amounts = {};
-    state.allocations.forEach(function(a){
-      if (a.type === 'fixed') {
-        amounts[a.id] = Number(a.value) || 0;
-      } else {
-        var w = Number(a.value) || 0;
-        amounts[a.id] = ratioWeightSum > 0 ? remaining * (w / ratioWeightSum) : 0;
-      }
-    });
-    return {fixedTotal: fixedTotal, remaining: remaining, ratioWeightSum: ratioWeightSum, amounts: amounts};
   }
 
   function renderAllocations(savings){
@@ -1555,38 +1909,38 @@
     });
   }
 
+  // 달을 바꾸면 그 달의 급여·지출·배분을 불러와요
   function loadMonthInputs(){
-    document.getElementById('monthLabel').textContent = monthLabelText(state.currentMonth);
-    document.getElementById('monthJumpInput').value = state.currentMonth;
-    var rec = state.history[state.currentMonth];
-    document.getElementById('salaryInput').value = rec ? rec.salary : '';
+    var ym = state.currentMonth;
+    var cfg = monthConfig(ym);
+    state.categories = cloneList(cfg.categories);
+    state.allocations = cloneList(cfg.allocations);
+    document.getElementById('monthLabel').textContent = monthLabelText(ym);
+    document.getElementById('monthJumpInput').value = ym;
+    var sal = cfg.salary;
+    document.getElementById('salaryInput').value = (sal === null || sal === undefined || sal === '') ? '' : sal;
     document.getElementById('startingAssetInput').value = state.startingAsset || '';
+    renderCategories();
+    renderAllocList();
+    renderMonthStatus();
     recalcHero();
+    renderCalc();
   }
 
-  function saveCurrentMonth(){
-    var salary = Number(document.getElementById('salaryInput').value) || 0;
-    var expense = catTotal();
-    var savings = salary - expense;
-    var rate = salary > 0 ? (savings/salary*100) : 0;
-    var calc = computeAllocations(savings);
-    var allocationBreakdown = state.allocations
-      .map(function(a){ return {name: a.name || '이름없음', amount: calc.amounts[a.id] || 0}; })
-      .filter(function(x){ return x.amount > 0.001; });
-    var allocSum = allocationBreakdown.reduce(function(s,x){ return s + x.amount; }, 0);
-    var unallocated = savings - allocSum;
-    if (unallocated > 0.05) allocationBreakdown.push({name: '미배분', amount: unallocated});
-    state.history[state.currentMonth] = {
-      salary: salary,
-      expenseTotal: expense,
-      savings: savings,
-      savingsRate: rate,
-      categories: state.categories.map(function(c){ return {name: c.name, amount: c.amount}; }),
-      allocationBreakdown: allocationBreakdown
-    };
+  function saveCurrentMonth(btnId){
+    if (salaryValue() === null) {
+      if (btnId) flashButton(btnId, '급여 입력 필요', '저장');
+      document.getElementById('salaryInput').focus();
+      return;
+    }
+    var ym = state.currentMonth;
+    state.history[ym] = buildRecord();
+    delete state.drafts[ym];
     persist();
     loadMonthInputs();
     renderAssets();
+    renderBackupReminder();
+    if (btnId) flashButton(btnId, '저장됨', '저장');
   }
 
   function holdingEvalManwon(h){
@@ -1616,33 +1970,33 @@
     return {pnl: pnl, pct: pct};
   }
 
+  // 주식은 저축(또는 초기자산)으로 산다고 보고, 총자산에는 원금이 아닌 손익만 더해요.
+  // (원금은 이미 저축액에 들어 있어서 평가금액을 통째로 더하면 두 번 계산돼요)
+  function investPnl(){
+    var p = holdingsPnl();
+    return (p ? p.pnl : 0) + (Number(state.realizedPnl) || 0);
+  }
+
   function totalAssets(){
     var sum = Number(state.startingAsset) || 0;
     Object.keys(state.history).forEach(function(ym){
-      sum += state.history[ym].savings;
+      sum += Number(state.history[ym].savings) || 0;
     });
-    sum += holdingsTotal();
-    sum += Number(state.realizedPnl) || 0;
+    sum += investPnl();
     return sum;
   }
 
   function computeAssetComposition(){
     var comp = {};
     if (state.startingAsset) comp['초기자산'] = Number(state.startingAsset);
-    var months = Object.keys(state.history).sort();
-    months.forEach(function(ym){
+    Object.keys(state.history).sort().forEach(function(ym){
       var rec = state.history[ym];
-      var items = rec.allocationBreakdown || [{name: '저축', amount: rec.savings}];
-      items.forEach(function(it){
-        comp[it.name] = (comp[it.name] || 0) + it.amount;
+      (rec.allocationBreakdown || []).forEach(function(it){
+        comp[it.name] = (comp[it.name] || 0) + (Number(it.amount) || 0);
       });
     });
-    state.holdings.forEach(function(h){
-      var val = holdingEvalManwon(h);
-      if (val > 0) comp[h.name || '이름없는 종목'] = (comp[h.name || '이름없는 종목'] || 0) + val;
-    });
-    var realized = Number(state.realizedPnl) || 0;
-    if (realized > 0) comp['실현손익'] = (comp['실현손익'] || 0) + realized;
+    var inv = investPnl();
+    if (Math.abs(inv) > 0.001) comp[INVEST] = (comp[INVEST] || 0) + inv;
     return comp;
   }
 
@@ -1690,7 +2044,8 @@
     var h = state.holdings.find(function(x){ return x.id === record.holdingId; });
     if (!h) return;
     var avgPrice = Number(record.avgPriceAtSale) || 0;
-    var qty = Number(record.quantity) || 0;
+    var qty = Math.min(Math.max(Number(record.quantity) || 0, 0), Number(h.quantity) || 0);
+    record.quantity = qty;
     var gain = avgPrice > 0 ? (qty * (Number(record.sellPrice) - avgPrice)) / 10000 : 0;
     record.gain = gain;
     state.realizedPnl = (Number(state.realizedPnl) || 0) + gain;
@@ -1754,18 +2109,19 @@
           var sign = pnlManwon >= 0 ? '+' : '';
           pnlHtml = '<span class="pnl ' + cls + '">' + sign + fmt(pnlManwon) + ' (' + sign + pnlPct.toFixed(1) + '%)</span>';
         }
+        var id = escapeHtml(h.id);
         var row = document.createElement('div');
         row.className = 'holding-row';
         row.innerHTML =
           '<div class="holding-top">' +
-            '<input type="text" value="' + escapeHtml(h.name) + '" data-id="' + h.id + '" data-field="name" placeholder="종목명">' +
-            '<button class="sell-btn" data-id="' + h.id + '">매도</button>' +
-            '<button class="del" data-id="' + h.id + '">×</button>' +
+            '<input type="text" value="' + escapeHtml(h.name) + '" data-id="' + id + '" data-field="name" placeholder="종목명">' +
+            '<button class="sell-btn" data-id="' + id + '">매도</button>' +
+            '<button class="del" data-id="' + id + '">×</button>' +
           '</div>' +
           '<div class="holding-fields">' +
-            '<label>수량<input type="number" value="' + h.quantity + '" data-id="' + h.id + '" data-field="quantity" step="0.01" inputmode="decimal"></label>' +
-            '<label>평단가(원)<input type="number" value="' + h.avgPrice + '" data-id="' + h.id + '" data-field="avgPrice" step="1" inputmode="decimal"></label>' +
-            '<label>현재가(원)<input type="number" value="' + h.currentPrice + '" data-id="' + h.id + '" data-field="currentPrice" step="1" inputmode="decimal"></label>' +
+            '<label>수량<input type="number" value="' + (Number(h.quantity) || 0) + '" data-id="' + id + '" data-field="quantity" step="0.01" inputmode="decimal"></label>' +
+            '<label>평단가(원)<input type="number" value="' + (Number(h.avgPrice) || 0) + '" data-id="' + id + '" data-field="avgPrice" step="1" inputmode="decimal"></label>' +
+            '<label>현재가(원)<input type="number" value="' + (Number(h.currentPrice) || 0) + '" data-id="' + id + '" data-field="currentPrice" step="1" inputmode="decimal"></label>' +
           '</div>' +
           '<div class="holding-result">' +
             '<span class="eval">' + fmt(evalAmt) + '</span>' +
@@ -1775,6 +2131,7 @@
       });
     }
     renderHoldingsSummary();
+    renderBackupReminder();
   }
 
   function renderHoldingsSummary(){
@@ -1814,7 +2171,7 @@
     var realizedEl = document.getElementById('realizedPnlValue');
     var realizedSummaryRow = document.getElementById('realizedPnlSummaryRow');
     var realizedSummaryEl = document.getElementById('realizedPnlSummaryValue');
-    if (realized === 0) {
+    if (Math.abs(realized) < 0.001) {
       realizedRow.style.display = 'none';
       if (realizedSummaryRow) realizedSummaryRow.style.display = 'none';
     } else {
@@ -1837,13 +2194,15 @@
     var legend = document.getElementById('assetPieLegend');
     hideTooltip('assetsPieCard');
     var comp = computeAssetComposition();
-    var entries = Object.keys(comp)
-      .map(function(k){ return {name: k, amount: comp[k]}; })
-      .filter(function(e){ return e.amount > 0.01; })
+    var all = Object.keys(comp).map(function(k){ return {name: k, amount: comp[k]}; });
+    var entries = all.filter(function(e){ return e.amount > 0.01; })
       .sort(function(a,b){ return b.amount - a.amount; });
-    var total = entries.reduce(function(s,e){ return s + e.amount; }, 0);
+    var negatives = all.filter(function(e){ return e.amount < -0.01; })
+      .sort(function(a,b){ return a.amount - b.amount; });
+    var posTotal = entries.reduce(function(s,e){ return s + e.amount; }, 0);
+    var netTotal = totalAssets();
 
-    if (total <= 0) {
+    if (posTotal <= 0) {
       holder.innerHTML = '';
       legend.innerHTML = '<div class="empty-state" style="padding:0;">기록을 저장하면 자산 구성이 표시돼요</div>';
       return;
@@ -1853,7 +2212,7 @@
     var circ = 2 * Math.PI * r;
     var segs = '', off = 0, lh = '';
     entries.forEach(function(e, i){
-      var frac = e.amount/total;
+      var frac = e.amount/posTotal;
       var len = frac * circ;
       var pct = frac*100;
       var color = palette[i % palette.length];
@@ -1863,7 +2222,11 @@
         'data-name="'+escapeHtml(e.name)+'" data-amount="'+e.amount+'" data-pct="'+pct.toFixed(1)+'" />';
       off += frac;
       lh += '<div class="leg-row"><span class="dot" style="background:'+color+';"></span>' +
-        '<span class="name">'+escapeHtml(e.name)+'</span><span class="pct">'+Math.round(pct)+'%</span></div>';
+        '<span class="name">'+escapeHtml(e.name)+'</span><span class="val">'+fmt(e.amount)+'</span><span class="pct">'+Math.round(pct)+'%</span></div>';
+    });
+    negatives.forEach(function(e){
+      lh += '<div class="leg-row"><span class="dot" style="background:transparent;border:1.5px solid #DD4B43;"></span>' +
+        '<span class="name">'+escapeHtml(e.name)+' (차감)</span><span class="val" style="color:var(--coral);">'+fmt(e.amount)+'</span></div>';
     });
 
     holder.innerHTML =
@@ -1871,24 +2234,35 @@
         '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#E2E5EA" stroke-width="'+sw+'" />' +
         segs +
         '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-size="11" fill="#8B93A1">총자산</text>' +
-        '<text x="'+cx+'" y="'+(cy+18)+'" text-anchor="middle" font-size="17" font-weight="700" fill="#1A1D24">'+fmt(total)+'</text>' +
+        '<text x="'+cx+'" y="'+(cy+18)+'" text-anchor="middle" font-size="17" font-weight="700" fill="#1A1D24">'+fmt(netTotal)+'</text>' +
       '</svg>';
     legend.innerHTML = lh;
   }
 
+  // 월별 누적 자산. 실현손익은 매도한 달부터, 평가손익은 마지막 시점에만 반영해요.
   function buildCumulativeSeries(){
     var months = Object.keys(state.history).sort();
     var running = {};
     if (state.startingAsset) running['초기자산'] = Number(state.startingAsset);
     var series = [];
-    months.forEach(function(ym){
+    months.forEach(function(ym, idx){
       var rec = state.history[ym];
-      var items = rec.allocationBreakdown || [{name: '저축', amount: rec.savings}];
-      items.forEach(function(it){
-        running[it.name] = (running[it.name] || 0) + it.amount;
+      (rec.allocationBreakdown || []).forEach(function(it){
+        running[it.name] = (running[it.name] || 0) + (Number(it.amount) || 0);
       });
-      var total = Object.keys(running).reduce(function(s,k){ return s + running[k]; }, 0);
-      series.push({ym: ym, composition: Object.assign({}, running), total: total});
+      var comp = Object.assign({}, running);
+      var isLast = idx === months.length - 1;
+      var inv;
+      if (isLast) {
+        inv = investPnl();
+      } else {
+        inv = state.sellHistory.reduce(function(s, r){
+          return ((r.date || '').slice(0,7) <= ym) ? s + (Number(r.gain) || 0) : s;
+        }, 0);
+      }
+      if (Math.abs(inv) > 0.001) comp[INVEST] = (comp[INVEST] || 0) + inv;
+      var total = Object.keys(comp).reduce(function(s,k){ return s + comp[k]; }, 0);
+      series.push({ym: ym, composition: comp, total: total});
     });
     return series;
   }
@@ -1923,12 +2297,14 @@
     var nameTotals = {};
     series.forEach(function(pt){
       Object.keys(pt.composition).forEach(function(k){
-        if (pt.composition[k] > 0) nameTotals[k] = (nameTotals[k] || 0) + pt.composition[k];
+        var v = Math.abs(pt.composition[k]);
+        if (v > 0.001) nameTotals[k] = (nameTotals[k] || 0) + v;
       });
     });
     var names = Object.keys(nameTotals).sort(function(a,b){ return nameTotals[b] - nameTotals[a]; });
     var colorFor = {};
     names.forEach(function(n, i){ colorFor[n] = palette[i % palette.length]; });
+    if (colorFor[SHORTFALL]) colorFor[SHORTFALL] = '#E8988F';
     legend.innerHTML = names.map(function(n){
       return '<div class="leg-item"><span class="dot" style="background:'+colorFor[n]+';"></span>' + escapeHtml(n) + '</div>';
     }).join('') + '<div class="leg-item"><span class="dot" style="background:#1A1D24;"></span>총자산 추이</div>';
@@ -1937,31 +2313,48 @@
     var h = 220;
     var padTop = 16, padBottom = 26;
     var chartH = h - padTop - padBottom;
-    var maxTotal = Math.max.apply(null, series.map(function(p){ return p.total; }).concat([0]));
-    var minTotal = Math.min.apply(null, series.map(function(p){ return p.total; }).concat([0]));
-    var range = (maxTotal - minTotal) || 1;
+
+    // 양수는 0선 위로, 음수(적자·부족분, 투자 손실)는 0선 아래로 쌓아요
+    var maxV = 0, minV = 0;
+    series.forEach(function(pt){
+      var pos = 0, neg = 0;
+      Object.keys(pt.composition).forEach(function(k){
+        var v = pt.composition[k];
+        if (v > 0) pos += v; else neg += v;
+      });
+      pt._pos = pos; pt._neg = neg;
+      maxV = Math.max(maxV, pos, pt.total);
+      minV = Math.min(minV, neg, pt.total);
+    });
+    var range = (maxV - minV) || 1;
     var stepX = w / series.length;
     var barW = Math.min(28, stepX * 0.5);
 
-    function yFor(v){ return padTop + (1 - (v - minTotal)/range) * chartH; }
+    function yFor(v){ return padTop + (maxV - v)/range * chartH; }
     var zeroY = yFor(0);
 
     var barsHtml = '';
     series.forEach(function(pt, i){
       var cx = stepX*i + stepX/2;
       var x = cx - barW/2;
-      var yCursor = zeroY;
+      var upCursor = zeroY;
+      var downCursor = zeroY;
       names.forEach(function(n){
         var val = pt.composition[n];
-        if (!val || val <= 0) return;
-        var segH = (val/range) * chartH;
-        var segY = yCursor - segH;
-        var pct = pt.total > 0 ? (val/pt.total*100) : 0;
+        if (!val || Math.abs(val) < 0.001) return;
+        var segH = Math.abs(val)/range * chartH;
+        var segY;
+        if (val > 0) { segY = upCursor - segH; upCursor = segY; }
+        else { segY = downCursor; downCursor = segY + segH; }
+        var pct = pt._pos > 0 ? (Math.abs(val)/pt._pos*100) : 0;
         barsHtml += '<rect class="combo-bar-seg" x="'+x.toFixed(1)+'" y="'+segY.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(segH,0).toFixed(1)+'" fill="'+colorFor[n]+'" rx="2" ' +
           'data-name="'+escapeHtml(n)+'" data-amount="'+val+'" data-pct="'+pct.toFixed(1)+'" data-label="'+escapeHtml(pt.label)+'" />';
-        yCursor = segY;
       });
     });
+
+    var zeroLine = minV < 0
+      ? '<line x1="0" x2="'+w+'" y1="'+zeroY.toFixed(1)+'" y2="'+zeroY.toFixed(1)+'" stroke="#C7CCD3" stroke-width="1" />'
+      : '';
 
     var lineD = series.map(function(pt, i){
       var cx = stepX*i + stepX/2;
@@ -1980,12 +2373,12 @@
 
     var labels = series.map(function(pt, i){
       var cx = stepX*i + stepX/2;
-      return '<text x="'+cx.toFixed(1)+'" y="'+(h-8)+'" font-size="10" fill="#8B93A1" text-anchor="middle">'+pt.label+'</text>';
+      return '<text x="'+cx.toFixed(1)+'" y="'+(h-8)+'" font-size="10" fill="#8B93A1" text-anchor="middle">'+escapeHtml(pt.label)+'</text>';
     }).join('');
 
     holder.innerHTML =
       '<svg viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" xmlns="http://www.w3.org/2000/svg">' +
-        barsHtml +
+        zeroLine + barsHtml +
         '<path d="'+lineD+'" fill="none" stroke="#1A1D24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" />' +
         dots + labels +
       '</svg>';
@@ -1999,6 +2392,10 @@
     var months = Object.keys(state.history).sort();
     var hlist = document.getElementById('historyList');
     hlist.innerHTML = '';
+    if (months.length === 0) {
+      hlist.innerHTML = '<div class="empty-state" style="padding:10px 0;">저장된 달이 없어요</div>';
+      return;
+    }
     months.slice().reverse().forEach(function(ym){
       var rec = state.history[ym];
       var row = document.createElement('div');
@@ -2006,39 +2403,37 @@
       row.innerHTML =
         '<span class="ym">' + monthLabelText(ym) + '</span>' +
         '<span><span class="sv ' + (rec.savings<0?'neg':'') + '">' + fmt(rec.savings) + '</span>' +
-        '<span class="rate">' + rec.savingsRate.toFixed(1) + '%</span></span>';
+        '<span class="rate">' + (Number(rec.savingsRate) || 0).toFixed(1) + '%</span></span>';
       hlist.appendChild(row);
     });
   }
 
-  // event bindings
-  document.getElementById('prevMonth').addEventListener('click', function(){
-    state.currentMonth = shiftMonth(state.currentMonth, -1);
+  // ---------- 이벤트 ----------
+  function goMonth(ym){
+    state.currentMonth = ym;
     loadMonthInputs();
+  }
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    goMonth(shiftMonth(state.currentMonth, -1));
   });
   document.getElementById('nextMonth').addEventListener('click', function(){
-    state.currentMonth = shiftMonth(state.currentMonth, 1);
-    loadMonthInputs();
+    goMonth(shiftMonth(state.currentMonth, 1));
   });
   document.getElementById('prevYear').addEventListener('click', function(){
-    state.currentMonth = shiftMonth(state.currentMonth, -12);
-    loadMonthInputs();
+    goMonth(shiftMonth(state.currentMonth, -12));
   });
   document.getElementById('nextYear').addEventListener('click', function(){
-    state.currentMonth = shiftMonth(state.currentMonth, 12);
-    loadMonthInputs();
+    goMonth(shiftMonth(state.currentMonth, 12));
   });
   document.getElementById('monthJumpInput').addEventListener('change', function(){
-    if (this.value) {
-      state.currentMonth = this.value;
-      loadMonthInputs();
-    }
+    if (this.value) goMonth(this.value);
   });
+
   function flashButton(id, tempText, normalText){
     var btn = document.getElementById(id);
     if (!btn) return;
     btn.textContent = tempText;
-    setTimeout(function(){ btn.textContent = normalText; }, 1000);
+    setTimeout(function(){ btn.textContent = normalText; }, 1200);
   }
 
   function askConfirm(message, onConfirm){
@@ -2059,54 +2454,129 @@
   }
 
   document.getElementById('manualSaveBtn').addEventListener('click', function(){
-    saveCurrentMonth();
-    flashButton('manualSaveBtn', '저장됨', '저장');
+    saveCurrentMonth('manualSaveBtn');
   });
 
-  document.getElementById('resetSalaryBtn').addEventListener('click', function(){
-    askConfirm('정말 초기화하시겠습니까?', function(){
+  function showBackupStatus(text, isError){
+    var el = document.getElementById('backupStatus');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = isError ? 'var(--coral)' : 'var(--mint)';
+  }
+
+  function doExport(){
+    try {
+      state.lastBackupAt = Date.now();
+      persist();
+      var data = JSON.stringify(stateSnapshot(), null, 2);
+      var blob = new Blob([data], {type: 'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'asset-dashboard-backup-' + todayLocal() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      showBackupStatus('백업 파일을 내보냈어요.', false);
+      renderBackupReminder();
+      return true;
+    } catch(e) {
+      console.error('export failed', e);
+      showBackupStatus('내보내기에 실패했어요.', true);
+      return false;
+    }
+  }
+
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    doExport();
+  });
+
+  document.getElementById('backupReminderBtn').addEventListener('click', function(){
+    doExport();
+  });
+
+  document.getElementById('importBtn').addEventListener('click', function(){
+    document.getElementById('importFileInput').click();
+  });
+
+  document.getElementById('importFileInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      var data;
+      try {
+        data = JSON.parse(evt.target.result);
+        if (!data || typeof data !== 'object' || !data.history) throw new Error('bad');
+      } catch(err) {
+        showBackupStatus('올바른 백업 파일이 아니에요.', true);
+        return;
+      }
+      askConfirm('백업 파일을 불러올까요? 지금 기기에 있는 데이터를 덮어써요.', function(){
+        applyData(data);
+        persist();
+        renderAll();
+        showBackupStatus('백업을 불러왔어요.', false);
+      });
+    };
+    reader.onerror = function(){
+      showBackupStatus('파일을 읽지 못했어요.', true);
+    };
+    reader.readAsText(file);
+  });
+
+  function resetViewedMonth(){
+    var label = monthLabelText(state.currentMonth);
+    askConfirm(label + ' 기록을 지울까요? 이 달의 급여·지출·배분만 지워지고, 초기자산과 다른 달은 그대로예요.', function(){
       delete state.history[state.currentMonth];
-      state.startingAsset = 0;
+      delete state.drafts[state.currentMonth];
       persist();
       renderAll();
     });
+  }
+  document.getElementById('resetSalaryBtn').addEventListener('click', resetViewedMonth);
+  document.getElementById('monthResetBtn').addEventListener('click', resetViewedMonth);
+
+  document.getElementById('saveCategoriesBtn').addEventListener('click', function(){
+    afterEdit();
+    flashButton('saveCategoriesBtn', '저장됨', '저장');
   });
   document.getElementById('resetCategoriesBtn').addEventListener('click', function(){
-    askConfirm('정말 초기화하시겠습니까?', function(){
+    askConfirm('이 달 지출 항목을 기본값으로 되돌릴까요?', function(){
       state.categories = cloneItems(state.categoryDefaults) || defaultCategories();
-      persist();
-      renderAll();
+      renderCategories();
+      afterEdit();
     });
   });
   document.getElementById('setCategoryDefaultBtn').addEventListener('click', function(){
     askConfirm('현재 지출 항목을 기본값으로 저장할까요? 다음부터 초기화 시 이 값을 불러와요.', function(){
       state.categoryDefaults = cloneItems(state.categories);
       persist();
-      renderAll();
+      renderDefaultHints();
     });
   });
+  document.getElementById('saveAllocationsBtn').addEventListener('click', function(){
+    afterEdit();
+    flashButton('saveAllocationsBtn', '저장됨', '저장');
+  });
   document.getElementById('resetAllocationsBtn').addEventListener('click', function(){
-    askConfirm('정말 초기화하시겠습니까?', function(){
+    askConfirm('이 달 저축 배분을 기본값으로 되돌릴까요?', function(){
       state.allocations = cloneItems(state.allocationDefaults) || defaultAllocations();
-      persist();
-      renderAll();
+      renderAllocList();
+      afterEdit();
     });
   });
   document.getElementById('setAllocationDefaultBtn').addEventListener('click', function(){
     askConfirm('현재 저축 배분을 기본값으로 저장할까요? 다음부터 초기화 시 이 값을 불러와요.', function(){
       state.allocationDefaults = cloneItems(state.allocations);
       persist();
-      renderAll();
+      renderDefaultHints();
     });
   });
-  document.getElementById('monthResetBtn').addEventListener('click', function(){
-    askConfirm('정말 이번 달 기록을 초기화하시겠습니까?', function(){
-      delete state.history[state.currentMonth];
-      persist();
-      renderAll();
-    });
-  });
-  document.getElementById('salaryInput').addEventListener('input', recalcHero);
+
+  document.getElementById('salaryInput').addEventListener('input', afterEdit);
   document.getElementById('calcSalaryInput').addEventListener('input', renderCalc);
   document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -2135,9 +2605,8 @@
     if (t.classList && t.classList.contains('combo-bar-seg')) {
       var name = t.getAttribute('data-name');
       var amount = Number(t.getAttribute('data-amount'));
-      var pct = t.getAttribute('data-pct');
       var label = t.getAttribute('data-label');
-      showTooltip('comboChartCard', e, label + ' · ' + name + ' ' + fmt(amount) + ' (' + pct + '%)');
+      showTooltip('comboChartCard', e, label + ' · ' + name + ' ' + fmt(amount));
     } else if (t.classList && t.classList.contains('pt-hit')) {
       var l = t.getAttribute('data-label');
       var v = Number(t.getAttribute('data-value'));
@@ -2164,11 +2633,13 @@
     persist();
     renderAssets();
   });
+  document.getElementById('saveBtn').addEventListener('click', function(){
+    saveCurrentMonth('saveBtn');
+  });
   document.getElementById('addCatBtn').addEventListener('click', function(){
-    state.categories.push({id: 'c' + Date.now(), name: '', amount: 0});
-    persist();
+    state.categories.push({id: newId('c'), name: '', amount: 0});
     renderCategories();
-    recalcHero();
+    afterEdit();
   });
   document.getElementById('catList').addEventListener('input', function(e){
     var id = e.target.getAttribute('data-id');
@@ -2177,34 +2648,32 @@
     var cat = state.categories.find(function(c){return c.id === id;});
     if (!cat) return;
     cat[field] = field === 'amount' ? Number(e.target.value) || 0 : e.target.value;
-    persist();
-    if (field === 'amount') { renderBars(); document.getElementById('catTotal').textContent = fmt(catTotal()); recalcHero(); }
+    renderBars();
+    document.getElementById('catTotal').textContent = fmt(catTotal());
+    afterEdit();
   });
   document.getElementById('catList').addEventListener('click', function(e){
     if (e.target.classList.contains('del')) {
       var id = e.target.getAttribute('data-id');
       state.categories = state.categories.filter(function(c){return c.id !== id;});
-      persist();
       renderCategories();
-      recalcHero();
+      afterEdit();
     }
   });
 
   document.getElementById('addAllocBtn').addEventListener('click', function(){
-    state.allocations.push({id: 'a' + Date.now(), name: '', type: 'ratio', value: 0});
-    persist();
+    state.allocations.push({id: newId('a'), name: '', type: 'ratio', value: 0});
     renderAllocList();
-    recalcHero();
+    afterEdit();
   });
   document.getElementById('allocList').addEventListener('input', function(e){
     var id = e.target.getAttribute('data-id');
     var field = e.target.getAttribute('data-field');
-    if (!id || !field) return;
+    if (!id || !field || field === 'type') return;
     var item = state.allocations.find(function(a){return a.id === id;});
     if (!item) return;
     item[field] = field === 'value' ? Number(e.target.value) || 0 : e.target.value;
-    persist();
-    recalcHero();
+    afterEdit();
   });
   document.getElementById('allocList').addEventListener('change', function(e){
     var id = e.target.getAttribute('data-id');
@@ -2213,21 +2682,19 @@
     var item = state.allocations.find(function(a){return a.id === id;});
     if (!item) return;
     item.type = e.target.value;
-    persist();
-    recalcHero();
+    afterEdit();
   });
   document.getElementById('allocList').addEventListener('click', function(e){
     if (e.target.classList.contains('del')) {
       var id = e.target.getAttribute('data-id');
       state.allocations = state.allocations.filter(function(a){return a.id !== id;});
-      persist();
       renderAllocList();
-      recalcHero();
+      afterEdit();
     }
   });
 
   document.getElementById('addHoldingBtn').addEventListener('click', function(){
-    state.holdings.push({id: 'h' + Date.now(), name: '', quantity: 0, avgPrice: 0, currentPrice: 0});
+    state.holdings.push({id: newId('h'), name: '', quantity: 0, avgPrice: 0, currentPrice: 0});
     persist();
     renderHoldingsList();
     renderAssets();
@@ -2240,7 +2707,7 @@
     if (!item) return;
     item[field] = field === 'name' ? e.target.value : (Number(e.target.value) || 0);
     persist();
-    // live-update just this row's result + totals without rebuilding inputs (keeps focus)
+    // 입력칸은 다시 그리지 않고 결과만 갱신 (포커스 유지)
     var rowEl = e.target.closest('.holding-row');
     var evalEl = rowEl.querySelector('.eval');
     if (evalEl) evalEl.textContent = fmt(holdingEvalManwon(item));
@@ -2296,13 +2763,17 @@
     sellTargetId = null;
   });
   document.getElementById('sellModalOk').addEventListener('click', function(){
+    var sellPrice = Number(document.getElementById('sellPriceInput').value) || 0;
+    if (sellPrice <= 0) {
+      document.getElementById('sellPriceInput').focus();
+      return; // 매도가 없이 확정되지 않게
+    }
     var h = state.holdings.find(function(x){ return x.id === sellTargetId; });
     document.getElementById('sellModal').style.display = 'none';
     if (!h) { sellTargetId = null; return; }
     var maxQty = Number(h.quantity) || 0;
     var qtySold = Number(document.getElementById('sellQtyInput').value) || 0;
     qtySold = Math.min(Math.max(qtySold, 0), maxQty);
-    var sellPrice = Number(document.getElementById('sellPriceInput').value) || 0;
     var avgPrice = Number(h.avgPrice) || 0;
     if (qtySold > 0) {
       var gain = avgPrice > 0 ? (qtySold * (sellPrice - avgPrice)) / 10000 : 0;
@@ -2312,14 +2783,14 @@
         state.holdings = state.holdings.filter(function(x){ return x.id !== h.id; });
       }
       state.sellHistory.push({
-        id: 's' + Date.now(),
+        id: newId('s'),
         holdingId: h.id,
         holdingName: h.name,
         quantity: qtySold,
         sellPrice: sellPrice,
         avgPriceAtSale: avgPrice,
         gain: gain,
-        date: new Date().toISOString().slice(0,10)
+        date: todayLocal()
       });
       persist();
       renderHoldingsList();
@@ -2396,7 +2867,9 @@
   });
 
   load();
+  if (migratedThisLoad) saveLocalOnly(); // 변환된 데이터를 바로 저장 (수정 시각은 그대로)
   renderAll();
+  initCloud();
 })();
 </script>
 </body>
